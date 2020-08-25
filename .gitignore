@@ -1,6 +1,7 @@
 __pycache__/
 output/
 models/
+shapenet/
 data/
 notebook/
 .idea

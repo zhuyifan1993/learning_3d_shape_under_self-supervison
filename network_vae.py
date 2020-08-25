@@ -37,7 +37,8 @@ class Network(nn.Module):
         z = q_z.sample().unsqueeze(dim=1).expand((1, pointsize, -1))
 
         # sample z from prior p(z)
-        # z = self.get_z_from_prior().unsqueeze(0).unsqueeze(0).expand((1, pointsize, -1))
+        # z = torch.Tensor([10, 10])
+        # z = z.unsqueeze(0).unsqueeze(0).expand((1, pointsize, -1))
 
         h = self.fcn(x, z).squeeze(dim=0)
         return h

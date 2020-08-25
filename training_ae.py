@@ -8,7 +8,7 @@ from network_ae import Network
 
 
 def sample_fake(pts, noise=0.3):
-    sampled = pts + torch.normal(0, 1, pts.shape) * noise.unsqueeze(dim=2)
+    sampled = pts + torch.normal(0, 1, pts.shape) * noise
     return sampled
 
 
@@ -31,38 +31,50 @@ def build_network(input_dim=3, c_dim=128):
     return net
 
 
-def train(net, optimizer, device, pts, rad):
+def train(net, data_loader, optimizer, device):
     net.train()
 
-    optimizer.zero_grad()
+    rec_err = 0
+    eiko_err = 0
+    total_batch = 0
 
-    # create samples from distribution D
-    fake = torch.Tensor(sample_fake(pts, rad).float())
-    uniform = 3 * torch.rand_like(fake) - 1.5
-    fake = torch.cat((fake, uniform), axis=1)
-    xv = fake.requires_grad_(True)
-    xv = xv.to(device)
+    for batch in data_loader:
+        pts = batch[0].float()
+        rad = batch[1].float()
+        B, S, _ = pts.size()
 
-    # reconstruction err
-    pts = pts.to(device)
-    y = net(pts, pts)
-    loss_pts = (y ** 2).mean()
+        optimizer.zero_grad()
 
-    # eikonal term
-    B, S, _ = pts.size()
-    c_xv = net.encoder(pts).unsqueeze(dim=1).expand((B, S * 2, -1))
-    c_xv = c_xv.detach().to(device)
-    f = net.fcn(xv, c_xv)
-    g = autograd.grad(outputs=f, inputs=xv,
-                      grad_outputs=torch.ones(f.size()).to(device),
-                      create_graph=True, retain_graph=True, only_inputs=True)[0]
-    eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).mean()
+        # create samples from distribution D
+        fake = torch.Tensor(sample_fake(pts, rad))
+        uniform = 3 * torch.rand_like(fake) - 1.5
+        fake = torch.cat((fake, uniform), axis=1)
+        xv = fake.requires_grad_(True)
+        xv = xv.to(device)
 
-    loss = loss_pts + 0.1 * eikonal_term
-    loss.backward()
-    optimizer.step()
+        # reconstruction err
+        pts = pts.to(device)
+        y = net(pts, pts)
+        loss_pts = (y ** 2).mean()
 
-    rec_err = loss_pts.item()
-    eiko_err = eikonal_term.item()
+        # eikonal term
+        c_xv = net.encoder(pts).unsqueeze(dim=1).expand((B, S * 2, -1))
+        c_xv = c_xv.detach().to(device)
+        f = net.fcn(xv, c_xv)
+        g = autograd.grad(outputs=f, inputs=xv,
+                          grad_outputs=torch.ones(f.size()).to(device),
+                          create_graph=True, retain_graph=True, only_inputs=True)[0]
+        eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).mean()
+
+        loss = loss_pts + 0.1 * eikonal_term
+        loss.backward()
+        optimizer.step()
+
+        rec_err += loss_pts.item()
+        eiko_err += eikonal_term.item()
+        total_batch += B
+
+    rec_err /= total_batch
+    eiko_err /= total_batch
 
     return rec_err, eiko_err

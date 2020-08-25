@@ -40,7 +40,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/ae/object_200_cdim_8'
+    save_fold = '/ae/object_200_cdim_8_partial_sparse'
 
     c_dim = 8
     net = build_network(input_dim=2, c_dim=c_dim)
