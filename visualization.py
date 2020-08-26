@@ -11,9 +11,10 @@ def main():
     category: car:[0:1191], bottle:[1192:1589]
 
     """
-    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")
+    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")
+    data = np.load('DGP/gargoyle.npy')
     print("object num:", len(data))
-    np.savetxt('shapenet/scene1.txt', data[50])
+    np.savetxt('shapenet/scene1.txt', data[::30])
     pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
     print(pcd)
     draw_geometries([pcd])

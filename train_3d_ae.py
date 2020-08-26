@@ -31,25 +31,32 @@ def normalize_data(input_data):
 
 
 if __name__ == '__main__':
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    c_dim = 256
-    save_fold = '/ae/shapenet_cdim_256'
+    c_dim = 0
+    # save_fold = '/ae/shapenet_cdim_256_200bottle'
+    save_fold = '/ae/dpg_cdim_0_gargoyle'
+
     os.makedirs('models' + save_fold, exist_ok=True)
 
-    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")
+    # data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200:1400]
+    data = np.load('DGP/gargoyle.npy')[::2]
+    data = np.expand_dims(data, axis=0)
+
     print("object num:", len(data))
     data = normalize_data(data)
-    dataset = Dataset(np.expand_dims(data[0], axis=0), knn=50)
+    dataset = Dataset(data, knn=50)
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
 
     net = build_network(input_dim=3, c_dim=c_dim)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = torch.nn.DataParallel(net)
     net.to(device)
 
     optimizer = optim.Adam(net.parameters())
 
-    for epoch in range(4000):
+    for epoch in range(2000):
         rec_err, eiko_err = train(net, data_loader, optimizer, device)
         print('epoch', epoch, 'rec_err:', rec_err, 'eiko_err:', eiko_err)
         if epoch % 100 == 0:
