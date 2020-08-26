@@ -34,16 +34,16 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     c_dim = 0
-    # save_fold = '/ae/shapenet_cdim_256_200bottle'
-    save_fold = '/ae/dpg_cdim_0_gargoyle'
+    save_fold = '/ae/shapenet_cdim_0_single_object_car'
+    # save_fold = '/ae/dpg_cdim_0_gargoyle'
 
     os.makedirs('models' + save_fold, exist_ok=True)
 
-    # data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200:1400]
-    data = np.load('DGP/gargoyle.npy')[::2]
+    data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[0]
+    # data = np.load('DGP/gargoyle.npy')[::2]
     data = np.expand_dims(data, axis=0)
 
-    print("object num:", len(data))
+    print("object num:", len(data), "samples per object:", data.shape[1])
     data = normalize_data(data)
     dataset = Dataset(data, knn=50)
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         model = torch.nn.DataParallel(net)
     net.to(device)
 
-    optimizer = optim.Adam(net.parameters())
+    optimizer = optim.Adam(net.parameters(), lr=0.0001)
 
     for epoch in range(2000):
         rec_err, eiko_err = train(net, data_loader, optimizer, device)
