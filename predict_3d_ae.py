@@ -40,17 +40,17 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    c_dim = 0
-    # save_fold = '/ae/shapenet_cdim_256_200bottle'
-    save_fold = '/ae/dpg_cdim_0_gargoyle_sup2'
+    c_dim = 256
+    save_fold = '/ae/shapenet_cdim_256_100_object_car'
+    # save_fold = '/ae/dpg_cdim_0_gargoyle_sup2'
 
-    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")
-    data = np.load('DGP/gargoyle.npy')[::2]
+    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[10]
+    # data = np.load('DGP/gargoyle.npy')[::2]
     data = np.expand_dims(data, axis=0)
 
     print("object num:", len(data), "samples per object:", data.shape[1])
     data = normalize_data(data)
-    conditioned_object = torch.from_numpy(data[0].astype(np.float32)).unsqueeze(dim=0)
+    conditioned_object = torch.from_numpy(data.astype(np.float32))
 
     net = build_network(input_dim=3, c_dim=c_dim)
     net.to(device)
@@ -58,6 +58,7 @@ if __name__ == '__main__':
 
     nb_grid = 128
     volume = predict(net, conditioned_object, nb_grid)
+    np.save('3d_sdf.npy', volume)
 
     verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
                                                                    gradient_direction='ascent')
@@ -69,4 +70,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_20.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_10_4000.ply', mesh)

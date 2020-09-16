@@ -40,7 +40,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/vae/object_200_zdim_8'
+    save_fold = '/vae/object_200_zdim_8_partial_4000ep'
 
     zdim = 8
     p0_z = get_prior_z(device, z_dim=zdim)
@@ -48,9 +48,9 @@ if __name__ == '__main__':
     net.load_state_dict(torch.load('./models' + save_fold + '/model_final.pth', map_location='cpu'))
 
     # predict learned SDF conditioned on input pointcloud
-    # x = generate_data_square(nb_data=25, std=0.01)
+    x = generate_data_square(nb_data=25, std=0.01)
     # x = generate_data(nb_data=100, noise=0.01)
-    x = np.load('models' + save_fold + '/object' + '/square_10.npy')
+    # x = np.load('models' + save_fold + '/object' + '/square_88.npy')
     point_cloud = torch.from_numpy(x.astype(np.float32)).unsqueeze(dim=0)
     v = predict(device, net, point_cloud)
 
