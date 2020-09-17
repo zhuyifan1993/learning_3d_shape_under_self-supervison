@@ -74,11 +74,11 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     z_dim = 8
-    save_fold = '/vae/object_100_zdim_8_partial'
+    save_fold = '/vae/object_200_zdim_8_partial'
 
     # generate synthetic data
     obj_list = []
-    for i in range(100):
+    for i in range(200):
         x = generate_data_square(nb_data=25, std=0.01)
         obj_list.append(x)
         os.makedirs('models' + save_fold + '/object', exist_ok=True)
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     data = np.stack(obj_list, axis=0)
     print("object num:", data.shape[0], "sample num", data.shape[1])
     dataset = Dataset(data, knn=10)
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=True)
 
     # create prior distribution p0_z for latent code z
     p0_z = get_prior_z(device, z_dim=z_dim)
@@ -102,8 +102,10 @@ if __name__ == '__main__':
     num_epochs = 1000
     avg_training_loss = []
     for epoch in range(num_epochs):
-        avg_training_loss.append(train(net, data_loader, optimizer, device))
-        print('Epoch [%d / %d] average training loss: %f' % (epoch + 1, num_epochs, avg_training_loss[-1]))
+        avg_loss, rec_loss = train(net, data_loader, optimizer, device)
+        avg_training_loss.append(avg_loss)
+        print('Epoch [%d / %d] average training loss: %f average reconstruction loss: %f' % (
+            epoch + 1, num_epochs, avg_training_loss[-1], rec_loss))
         # if epoch % 100 == 0:
         #     torch.save(net.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
 

@@ -32,13 +32,15 @@ class Network(nn.Module):
         pointsize = x.size(0)
         x = x.unsqueeze(dim=0)
 
-        # sample z from posterior q(z|x)
-        q_z = self.infer_z(point_cloud)
-        z = q_z.sample().unsqueeze(dim=1).expand((1, pointsize, -1))
-
         # sample z from prior p(z)
-        # z = torch.Tensor([10, 10])
+        # z = self.get_z_from_prior()
         # z = z.unsqueeze(0).unsqueeze(0).expand((1, pointsize, -1))
+
+        # sample z from posterior q(z|x)
+        # q_z = self.infer_z(point_cloud)
+        # z = q_z.sample().unsqueeze(dim=1).expand((1, pointsize, -1))
+        mean_z, _ = self.encoder(point_cloud)
+        z = mean_z.unsqueeze(dim=1).expand((1, pointsize, -1))
 
         h = self.fcn(x, z).squeeze(dim=0)
         return h

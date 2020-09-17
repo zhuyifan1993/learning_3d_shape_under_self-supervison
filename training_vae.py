@@ -36,6 +36,7 @@ def train(net, data_loader, optimizer, device):
     net.train()
 
     avg_loss = 0
+    rec_loss = 0
     it = 0
 
     for batch in data_loader:
@@ -71,7 +72,7 @@ def train(net, data_loader, optimizer, device):
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
         eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).sum(-1).mean()
 
-        loss = loss_pts + 0.1 * eikonal_term + kl * 0.01
+        loss = loss_pts + 0.01 * eikonal_term + kl * 0.01
 
         optimizer.zero_grad()
         loss.backward()
@@ -79,8 +80,10 @@ def train(net, data_loader, optimizer, device):
         optimizer.step()
 
         avg_loss += loss.item()
+        rec_loss += loss_pts.item()
         it += 1
 
     avg_loss /= it
+    rec_loss /= it
 
-    return avg_loss
+    return avg_loss, rec_loss

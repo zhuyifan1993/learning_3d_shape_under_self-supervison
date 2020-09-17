@@ -41,5 +41,5 @@ def sdf():
 
 
 if __name__ == "__main__":
-    main()
-    # sdf()
+    # main()
+    sdf()
