@@ -13,11 +13,11 @@ def main():
     category: car:[0:1191], bottle:[1192:1589]
 
     """
-    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[0]
+    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[0, ::10]
     data = np.expand_dims(data, axis=0)
     data = normalize_data(data).squeeze(0)
-    print("object num:", len(data))
-    np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][::])
+    # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:1500:])
+    np.savetxt('shapenet/scene1.txt', data)
     pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
     print(pcd)
     draw_geometries([pcd])
@@ -41,5 +41,5 @@ def sdf():
 
 
 if __name__ == "__main__":
-    # main()
-    sdf()
+    main()
+    # sdf()

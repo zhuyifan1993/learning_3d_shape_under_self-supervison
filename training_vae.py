@@ -72,7 +72,7 @@ def train(net, data_loader, optimizer, device):
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
         eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).sum(-1).mean()
 
-        loss = loss_pts + 0.01 * eikonal_term + kl * 0.01
+        loss = loss_pts + eikonal_term + kl
 
         optimizer.zero_grad()
         loss.backward()
