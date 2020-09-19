@@ -41,7 +41,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     z_dim = 8
-    save_fold = '/vae/shapenet_zdim_8_100_object_car_300point_kl1'
+    save_fold = '/vae/shapenet_zdim_0_single_object_car_lre3_eik0001'
 
     # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[0]
     # data = np.expand_dims(data, axis=0)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     # nb_grid = 128
     # volume = predict(net, conditioned_object, nb_grid)
 
-    volume = np.load('models' + save_fold + '/3d_sdf_1500.npy')
+    volume = np.load('models' + save_fold + '/3d_sdf.npy')
 
     verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
                                                                    gradient_direction='ascent')
@@ -70,4 +70,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_0_1500_300p.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_0_4000.ply', mesh)

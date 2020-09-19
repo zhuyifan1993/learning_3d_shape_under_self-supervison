@@ -32,11 +32,13 @@ def build_network(input_dim=3, p0_z=None, z_dim=128):
     return net
 
 
-def train(net, data_loader, optimizer, device):
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight):
     net.train()
 
     avg_loss = 0
     rec_loss = 0
+    eik_loss = 0
+    kl_loss = 0
     it = 0
 
     for batch in data_loader:
@@ -72,7 +74,7 @@ def train(net, data_loader, optimizer, device):
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
         eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).sum(-1).mean()
 
-        loss = loss_pts + eikonal_term + kl
+        loss = loss_pts + eik_weight * eikonal_term + kl_weight * kl
 
         optimizer.zero_grad()
         loss.backward()
@@ -81,9 +83,13 @@ def train(net, data_loader, optimizer, device):
 
         avg_loss += loss.item()
         rec_loss += loss_pts.item()
+        eik_loss += eikonal_term.item()
+        kl_loss += kl.item()
         it += 1
 
     avg_loss /= it
     rec_loss /= it
+    eik_loss /= it
+    kl_loss /= it
 
-    return avg_loss, rec_loss
+    return avg_loss, rec_loss, eik_loss, kl_loss
