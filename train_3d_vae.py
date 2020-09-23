@@ -63,20 +63,21 @@ def predict(net, conditioned_object, nb_grid, device):
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    z_dim = 128
-    save_fold = '/vae/shapenet_zdim_128_100_object_car_lre4_eik0001'
+    z_dim = 256
+    save_fold = '/vae/shapenet_zdim_256_single_object_bottle_lr5e4_eik01_debug'
     # save_fold = '/ae/dpg_cdim_0_gargoyle'
 
     os.makedirs('models' + save_fold, exist_ok=True)
 
-    data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[0:100]
-    # data = np.load('DGP/gargoyle.npy')[::2]
-    # data = np.expand_dims(data, axis=0)
+    data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200]
+    # data = np.load('DGP/gargoyle.npy')
+    data = np.expand_dims(data, axis=0)
 
     print("object num:", len(data), "samples per object:", data.shape[1])
     data = normalize_data(data)
-    dataset = Dataset(data, knn=50)
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True)
+    dataset = Dataset(data, knn=50, samples=1000)
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0,
+                                              drop_last=True, pin_memory=True)
 
     # create prior distribution p0_z for latent code z
     p0_z = get_prior_z(device, z_dim=z_dim)
@@ -87,11 +88,11 @@ if __name__ == '__main__':
         model = torch.nn.DataParallel(net)
     net.to(device)
 
-    optimizer = optim.Adam(net.parameters(), lr=1e-4)
+    optimizer = optim.Adam(net.parameters(), lr=5e-4)
 
     num_epochs = 4000
-    eik_weight = 0.001
-    kl_weight = 1
+    eik_weight = 0.1
+    kl_weight = 1.0e-3
     avg_training_loss = []
     rec_training_loss = []
     eik_training_loss = []
@@ -116,7 +117,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     fig = plt.figure()
-    plt.ylim([0, 50])
+    # plt.ylim([0, 50])
     p1, = plt.plot(avg_training_loss)
     p2, = plt.plot(rec_training_loss)
     p3, = plt.plot(eik_training_loss)

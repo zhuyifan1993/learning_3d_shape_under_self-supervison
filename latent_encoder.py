@@ -29,12 +29,16 @@ class Encoder(nn.Module):
         self.fc_3 = nn.Linear(2 * hidden_dim, hidden_dim)
         self.fc_mean = nn.Linear(hidden_dim, z_dim)
         self.fc_logstd = nn.Linear(hidden_dim, z_dim)
+        # torch.nn.init.constant_(self.fc_mean.weight, 0)
+        # torch.nn.init.constant_(self.fc_mean.bias, 0)
+        # torch.nn.init.constant_(self.fc_logstd.weight, 0)
+        # torch.nn.init.constant_(self.fc_logstd.bias, -10)
 
         self.actvn = nn.ReLU()
         self.pool = maxpool
 
     def forward(self, p):
-        batch_size, T, D = p.size()
+        B, T, D = p.size()
 
         # output size: B x T X F
         net = self.fc_pos(p)

@@ -55,24 +55,28 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight):
 
         # KL-divergence
         pts = pts.to(device)
-        q_z = net.infer_z(pts)
-        z = q_z.rsample().unsqueeze(dim=1).expand((B, S, -1))
-        kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
+        q_z, q_latent_mean, q_latent_std = net.infer_z(pts)
+        q_latent_mean = q_latent_mean.to(device)
+        q_latent_std = q_latent_std.to(device)
+        z = q_z.rsample()
+        z_latent = z.unsqueeze(dim=1).expand((B, S, -1))
+        kl = q_latent_mean.abs().mean(dim=-1) + (q_latent_std + 1).abs().mean(dim=-1)
+        # kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
         kl = kl.mean()
 
         # reconstruction err
-        z = z.to(device)
-        y = net.fcn(pts, z)
-        loss_pts = (y ** 2).sum(dim=(1, 2)).mean()
+        z_latent = z_latent.to(device)
+        y = net.fcn(pts, z_latent)
+        loss_pts = (y ** 2).mean()
 
         # eikonal term
-        z_xv = q_z.rsample().unsqueeze(dim=1).expand((B, S * 2, -1))
+        z_xv = z.unsqueeze(dim=1).expand((B, S * 2, -1))
         z_xv_no_grad = z_xv.detach().to(device)
         f = net.fcn(xv, z_xv_no_grad)
         g = autograd.grad(outputs=f, inputs=xv,
                           grad_outputs=torch.ones(f.size()).to(device),
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
-        eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).sum(-1).mean()
+        eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).mean()
 
         loss = loss_pts + eik_weight * eikonal_term + kl_weight * kl
 

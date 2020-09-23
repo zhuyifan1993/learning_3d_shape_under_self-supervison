@@ -4,11 +4,12 @@ from scipy import spatial
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, pts, knn, transform=None):
+    def __init__(self, pts, knn, samples=8 ** 2, transform=None):
 
         B, S, D = pts.shape
         self.pts = np.zeros_like(pts)
         self.radius = np.zeros((B, S, 1))
+        self.samples = samples
 
         for batch in range(B):
             tree = spatial.KDTree(pts[batch])
@@ -25,6 +26,9 @@ class Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         p = self.pts[idx]
         r = self.radius[idx]
+        random_idx = (torch.rand(self.samples) * p.shape[0]).long()
+        p = torch.index_select((torch.from_numpy(p)).float(), 0, random_idx)
+        r = torch.index_select((torch.from_numpy(r)).float(), 0, random_idx)
 
         if self.transform:
             p = self.transform(p)

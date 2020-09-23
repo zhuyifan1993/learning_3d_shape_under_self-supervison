@@ -48,7 +48,7 @@ class Network(nn.Module):
     def infer_z(self, point_cloud):
         mean_z, logstd_z = self.encoder(point_cloud)
         q_z = dist.Normal(mean_z, torch.exp(logstd_z))
-        return q_z
+        return q_z, mean_z, logstd_z
 
     def fcn(self, x, z):
         x = torch.cat((x, z), axis=2)

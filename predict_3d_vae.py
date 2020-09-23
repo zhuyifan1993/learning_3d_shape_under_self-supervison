@@ -40,8 +40,8 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    z_dim = 8
-    save_fold = '/vae/shapenet_zdim_0_single_object_car_lre3_eik0001'
+    z_dim = 128
+    save_fold = '/vae/shapenet_zdim_16_10_object_car_lr5e4_eik01_noinitial'
 
     # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[0]
     # data = np.expand_dims(data, axis=0)
