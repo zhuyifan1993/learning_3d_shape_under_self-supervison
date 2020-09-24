@@ -75,7 +75,7 @@ if __name__ == '__main__':
     path = glob.glob('shapenet_pointcloud/*')
     for i in np.arange(0, 1):
         data_i = np.load(path[i])['points']
-        normal_i = np.load(path[i])['normals']
+        normal_i = -np.load(path[i])['normals']
         if i == 0:
             data = np.expand_dims(data_i, axis=0)
             normal = np.expand_dims(normal_i, axis=0)
