@@ -1,4 +1,5 @@
 import os
+import glob
 import numpy as np
 
 import torch
@@ -63,19 +64,30 @@ def predict(net, conditioned_object, nb_grid, device):
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    z_dim = 256
-    save_fold = '/vae/shapenet_zdim_256_single_object_bottle_lr5e4_eik01_debug'
-    # save_fold = '/ae/dpg_cdim_0_gargoyle'
+    z_dim = 0
+    save_fold = '/vae/shapenet_zdim_16_100_object_bottle_debug'
 
     os.makedirs('models' + save_fold, exist_ok=True)
 
-    data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200]
-    # data = np.load('DGP/gargoyle.npy')
-    data = np.expand_dims(data, axis=0)
+    # data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200]
+    # data = np.expand_dims(data, axis=0)
+
+    path = glob.glob('shapenet_pointcloud/*')
+    for i in np.arange(0, 1):
+        data_i = np.load(path[i])['points']
+        normal_i = np.load(path[i])['normals']
+        if i == 0:
+            data = np.expand_dims(data_i, axis=0)
+            normal = np.expand_dims(normal_i, axis=0)
+        else:
+            data_i = np.expand_dims(data_i, axis=0)
+            data = np.concatenate([data, data_i])
+            normal_i = np.expand_dims(normal_i, axis=0)
+            normal = np.concatenate([normal, normal_i])
 
     print("object num:", len(data), "samples per object:", data.shape[1])
     data = normalize_data(data)
-    dataset = Dataset(data, knn=50, samples=1000)
+    dataset = Dataset(data, normal, knn=50, samples=1000)
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0,
                                               drop_last=True, pin_memory=True)
 
@@ -88,17 +100,23 @@ if __name__ == '__main__':
         model = torch.nn.DataParallel(net)
     net.to(device)
 
-    optimizer = optim.Adam(net.parameters(), lr=5e-4)
+    lr = 5e-4
+    optimizer = optim.Adam(net.parameters(), lr=lr)
 
     num_epochs = 4000
     eik_weight = 0.1
     kl_weight = 1.0e-3
+    use_kl = True
+    use_normal = True
     avg_training_loss = []
     rec_training_loss = []
     eik_training_loss = []
     kl_training_loss = []
     for epoch in range(num_epochs):
-        avg_loss, rec_loss, eik_loss, kl_loss = train(net, data_loader, optimizer, device, eik_weight, kl_weight)
+        if epoch % 500 == 0 and epoch:
+            optimizer.defaults['lr'] = lr / 2
+        avg_loss, rec_loss, eik_loss, kl_loss = train(net, data_loader, optimizer, device, eik_weight, kl_weight,
+                                                      use_kl, use_normal)
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)

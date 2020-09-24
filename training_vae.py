@@ -32,7 +32,7 @@ def build_network(input_dim=3, p0_z=None, z_dim=128):
     return net
 
 
-def train(net, data_loader, optimizer, device, eik_weight, kl_weight):
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, use_normal):
     net.train()
 
     avg_loss = 0
@@ -44,6 +44,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight):
     for batch in data_loader:
         pts = batch[0].float()
         rad = batch[1].float()
+        normal = batch[2].float()
         B, S, _ = pts.size()
 
         # create samples from distribution D
@@ -60,14 +61,25 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight):
         q_latent_std = q_latent_std.to(device)
         z = q_z.rsample()
         z_latent = z.unsqueeze(dim=1).expand((B, S, -1))
-        kl = q_latent_mean.abs().mean(dim=-1) + (q_latent_std + 1).abs().mean(dim=-1)
-        # kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
+        if use_kl:
+            kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
+        else:
+            kl = q_latent_mean.abs().mean(dim=-1) + (q_latent_std + 1).abs().mean(dim=-1)
         kl = kl.mean()
 
         # reconstruction err
         z_latent = z_latent.to(device)
-        y = net.fcn(pts, z_latent)
-        loss_pts = (y ** 2).mean()
+        normal = normal.to(device)
+        pts_xv = pts.requires_grad_(True)
+        pts_xv = pts_xv.to(device)
+        y = net.fcn(pts_xv, z_latent)
+        if use_normal:
+            gn = autograd.grad(outputs=y, inputs=pts_xv,
+                               grad_outputs=torch.ones(y.size()).to(device),
+                               create_graph=True, retain_graph=True, only_inputs=True)[0]
+            loss_pts = (y ** 2).mean() + (gn - normal).norm(2, dim=2).mean()
+        else:
+            loss_pts = (y ** 2).mean()
 
         # eikonal term
         z_xv = z.unsqueeze(dim=1).expand((B, S * 2, -1))

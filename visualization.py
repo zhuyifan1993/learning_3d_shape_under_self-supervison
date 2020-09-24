@@ -12,8 +12,18 @@ def main():
 
     category: car:[0:1191], bottle:[1192:1589]
 
+    folder: shapenet_pointcloud
+    object num: 783
+    each object with 250000 points/normals
+
+    category: car: 0000.npz - 0298.npz
+    category: bottle: 0299.npz - 0398.npz
+    category: sofa: 0399.npz - 0782.npz
+
     """
-    data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[0, ::10]
+    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1205, ::]
+    data = np.load("shapenet/0399.npz")['points']
+    # data = np.load("shapenet/0000.npz")['normals']
     data = np.expand_dims(data, axis=0)
     data = normalize_data(data).squeeze(0)
     # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:1500:])

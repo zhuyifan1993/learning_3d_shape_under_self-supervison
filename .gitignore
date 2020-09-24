@@ -2,6 +2,7 @@ __pycache__/
 output/
 models/
 shapenet/
+shapenet_pointcloud/
 DGP/
 data/
 notebook/
