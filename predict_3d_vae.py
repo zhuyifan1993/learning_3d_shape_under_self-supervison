@@ -1,3 +1,4 @@
+import glob
 import os
 
 import numpy as np
@@ -41,9 +42,12 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     z_dim = 16
-    save_fold = '/new/shapenet_zdim_16_100car'
+    save_fold = '/vae/shapenet_zdim_16_80_car_correctnormal'
 
-    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1205]
+    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1410]
+    # data = np.expand_dims(data, axis=0)
+
+    # data = np.load('shapenet_pointcloud/0110.npz')['points']
     # data = np.expand_dims(data, axis=0)
     #
     # print("object num:", len(data), "samples per object:", data.shape[1])
@@ -58,7 +62,7 @@ if __name__ == '__main__':
     # nb_grid = 128
     # volume = predict(net, conditioned_object, nb_grid)
 
-    volume = np.load('models' + save_fold + '/3d_sdf_2000.npy')
+    volume = np.load('models' + save_fold + '/3d_sdf_car_interp_9.npy')
 
     verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
                                                                    gradient_direction='ascent')
@@ -70,4 +74,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_0_2000.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_interp9_1_39.ply', mesh)

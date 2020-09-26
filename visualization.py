@@ -22,8 +22,7 @@ def main():
 
     """
     # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1205, ::]
-    data = np.load("shapenet/0399.npz")['points']
-    # data = np.load("shapenet/0000.npz")['normals']
+    data = np.load("shapenet_pointcloud/0000.npz")['points']
     data = np.expand_dims(data, axis=0)
     data = normalize_data(data).squeeze(0)
     # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:1500:])

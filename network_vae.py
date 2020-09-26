@@ -34,12 +34,14 @@ class Network(nn.Module):
 
         # sample z from prior p(z)
         # z = self.get_z_from_prior()
+        # z = point_cloud
         # z = z.unsqueeze(0).unsqueeze(0).expand((1, pointsize, -1))
 
         # sample z from posterior q(z|x)
         # q_z = self.infer_z(point_cloud)
         # z = q_z.sample().unsqueeze(dim=1).expand((1, pointsize, -1))
         mean_z, _ = self.encoder(point_cloud)
+        print(mean_z)
         z = mean_z.unsqueeze(dim=1).expand((1, pointsize, -1))
 
         h = self.fcn(x, z).squeeze(dim=0)
