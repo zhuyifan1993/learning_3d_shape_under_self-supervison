@@ -9,7 +9,7 @@ from training_vae import build_network
 from train_3d_vae import normalize_data, get_prior_z
 
 
-def predict(net, conditioned_object, nb_grid, device, interp):
+def predict(net, conditioned_object, nb_grid, device, interp=False):
     x = np.linspace(-1.5, 1.5, nb_grid)
     y = np.linspace(-1.5, 1.5, nb_grid)
     z = np.linspace(-1.5, 1.5, nb_grid)

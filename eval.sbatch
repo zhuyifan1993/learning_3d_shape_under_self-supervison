@@ -17,7 +17,7 @@
 #SBATCH --mem-per-cpu=3G
 # the job will need 12GB of memory equally distributed on 4 cpus.  (251GB are available in total on one node)
 
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #the job can use and see 1 GPUs (4 GPUs are available in total on one node)
 
 #SBATCH --time=1-0
@@ -50,7 +50,7 @@ cp -R /common/datasets/MNIST/ /scratch/$SLURM_JOB_ID/
 #cnn_minst.py <model save path> <mnist data path>
 ####
 
-singularity exec /common/singularityImages/TCML-Cuda10_0_TF1_15_2_PT1_4.simg python3 ~/train_3d_ae.py ~/model/ /scratch/$SLURM_JOB_ID/MNIST/
+singularity exec /common/singularityImages/TCML-Cuda10_0_TF1_15_2_PT1_4.simg python3 ~/evaluation.py ~/model/ /scratch/$SLURM_JOB_ID/MNIST/
 
 echo DONE!
 

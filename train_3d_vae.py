@@ -66,8 +66,16 @@ if __name__ == '__main__':
 
     z_dim = 0
     save_fold = '/vae/shapenet_zdim_16_100_object_bottle_debug'
-
     os.makedirs('models' + save_fold, exist_ok=True)
+
+    # create prior distribution p0_z for latent code z
+    p0_z = get_prior_z(device, z_dim=z_dim)
+    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
+
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = torch.nn.DataParallel(net)
+    net.to(device)
 
     # data = np.load('shapenet/points_shapenet_32x32x32_train.npy')[1200]
     # data = np.expand_dims(data, axis=0)
@@ -90,15 +98,6 @@ if __name__ == '__main__':
     dataset = Dataset(data, normal, knn=50, samples=1000)
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0,
                                               drop_last=True, pin_memory=True)
-
-    # create prior distribution p0_z for latent code z
-    p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
-
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        model = torch.nn.DataParallel(net)
-    net.to(device)
 
     lr = 5e-4
     optimizer = optim.Adam(net.parameters(), lr=lr)
