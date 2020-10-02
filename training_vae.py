@@ -4,12 +4,13 @@ import torch
 import torch.autograd as autograd
 import torch.nn as nn
 from torch import distributions as dist
+from scipy import spatial
 
 from network_vae import Network
 
 
-def sample_fake(pts, noise=0.3):
-    sampled = pts + torch.normal(0, 1, pts.shape) * noise
+def sample_fake(pts, local_sigma=0.01):
+    sampled = pts + torch.randn_like(pts) * local_sigma
     return sampled
 
 
@@ -42,17 +43,26 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
     it = 0
 
     for batch in data_loader:
-        pts = batch[0].float()
-        rad = batch[1].float()
-        normal = batch[2].float()
-        B, S, _ = pts.size()
+
+        pts = batch['points']
+        B, S, D = pts.size()
+        if use_normal:
+            normal = batch['normals']
+        else:
+            normal = torch.zeros_like(pts)
+
+        # rad = torch.zeros([B, S, 1])
+        #
+        # for b in range(B):
+        #     tree = spatial.cKDTree(pts[b])
+        #     dists, _ = tree.query(pts[b], k=50)
+        #
+        #     rad[b] = torch.from_numpy(np.expand_dims(dists[:, -1], axis=1))
 
         # create samples from distribution D
-        fake = torch.Tensor(sample_fake(pts, rad))
-        uniform = 3 * torch.rand_like(fake) - 1.5
-        fake = torch.cat((fake, uniform), axis=1)
-        xv = fake.requires_grad_(True)
-        xv = xv.to(device)
+        fake = sample_fake(pts)
+        uniform = 3 * torch.rand(B, S // 8, D) - 1.5
+        xv = torch.cat((fake, uniform), axis=1)
 
         # KL-divergence
         pts = pts.to(device)
@@ -60,7 +70,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
         q_latent_mean = q_latent_mean.to(device)
         q_latent_std = q_latent_std.to(device)
         z = q_z.rsample()
-        z_latent = z.unsqueeze(dim=1).expand((B, S, -1))
+
         if use_kl:
             kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
         else:
@@ -68,23 +78,22 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
         kl = kl.mean()
 
         # reconstruction err
-        z_latent = z_latent.to(device)
-        normal = normal.to(device)
-        pts_xv = pts.requires_grad_(True)
-        pts_xv = pts_xv.to(device)
-        y = net.fcn(pts_xv, z_latent)
+        z_latent = z.unsqueeze(dim=1).expand((B, S, -1)).detach().to(device)
+        pts.requires_grad_()
+        y = net.fcn(pts, z_latent)
         if use_normal:
-            gn = autograd.grad(outputs=y, inputs=pts_xv,
+            normal = normal.to(device)
+            gn = autograd.grad(outputs=y, inputs=pts,
                                grad_outputs=torch.ones(y.size()).to(device),
                                create_graph=True, retain_graph=True, only_inputs=True)[0]
-            loss_pts = (y ** 2).mean() + (gn - normal).norm(2, dim=2).mean()
+            loss_pts = (y.abs()).mean() + (gn - normal).norm(2, dim=2).mean()
         else:
-            loss_pts = (y ** 2).mean()
+            loss_pts = (y.abs()).mean()
 
         # eikonal term
-        z_xv = z.unsqueeze(dim=1).expand((B, S * 2, -1))
-        z_xv_no_grad = z_xv.detach().to(device)
-        f = net.fcn(xv, z_xv_no_grad)
+        z_xv = z.unsqueeze(dim=1).expand(-1, xv.shape[1], -1).detach().to(device)
+        xv = xv.requires_grad_().to(device)
+        f = net.fcn(xv, z_xv)
         g = autograd.grad(outputs=f, inputs=xv,
                           grad_outputs=torch.ones(f.size()).to(device),
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
