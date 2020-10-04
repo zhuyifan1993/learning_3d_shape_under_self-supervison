@@ -78,7 +78,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
         kl = kl.mean()
 
         # reconstruction err
-        z_latent = z.unsqueeze(dim=1).expand((B, S, -1)).detach().to(device)
+        z_latent = z.unsqueeze(dim=1).expand(-1, S, -1).to(device)
         pts.requires_grad_()
         y = net.fcn(pts, z_latent)
         if use_normal:
@@ -86,9 +86,9 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
             gn = autograd.grad(outputs=y, inputs=pts,
                                grad_outputs=torch.ones(y.size()).to(device),
                                create_graph=True, retain_graph=True, only_inputs=True)[0]
-            loss_pts = (y.abs()).mean() + (gn - normal).norm(2, dim=2).mean()
+            loss_pts = y.abs().mean() + (gn - normal).norm(2, dim=2).mean()
         else:
-            loss_pts = (y.abs()).mean()
+            loss_pts = y.abs().mean()
 
         # eikonal term
         z_xv = z.unsqueeze(dim=1).expand(-1, xv.shape[1], -1).detach().to(device)

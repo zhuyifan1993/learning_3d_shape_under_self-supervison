@@ -153,6 +153,9 @@ class ShapenetDataset(data.Dataset):
             with open(split_file, 'r') as f:
                 shapes_c = f.read().split('\n')
 
+            # limit data length
+            # shapes_c = shapes_c[:200]
+
             self.shapes += [
                 {'category': c, 'shape': s}
                 for s in shapes_c

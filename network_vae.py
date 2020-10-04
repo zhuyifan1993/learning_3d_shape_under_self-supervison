@@ -41,7 +41,7 @@ class Network(nn.Module):
         # q_z = self.infer_z(point_cloud)
         # z = q_z.sample().unsqueeze(dim=1).expand((1, pointsize, -1))
         mean_z, _ = self.encoder(point_cloud)
-        print(mean_z)
+        # print(mean_z)
         z = mean_z.unsqueeze(dim=1).expand((1, pointsize, -1))
 
         h = self.fcn(x, z).squeeze(dim=0)

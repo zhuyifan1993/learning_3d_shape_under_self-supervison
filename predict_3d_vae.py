@@ -41,28 +41,29 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    z_dim = 16
-    save_fold = '/vae/shapenet_zdim_16_80_car_correctnormal'
+    z_dim = 256
+    save_fold = '/vae/week_shapenet_200car_zdim_256_pbs3000_bs16'
 
-    # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1410]
-    # data = np.expand_dims(data, axis=0)
+    DATA_PATH = 'data/ShapeNet'
+    split_file = os.path.join(DATA_PATH, "02958343", 'train.lst')
+    with open(split_file, 'r') as f:
+        model = f.read().split('\n')
+    data = np.load(os.path.join(DATA_PATH, "02958343", model[1], 'pointcloud.npz'))['points']
+    data = np.expand_dims(data, axis=0)
 
-    # data = np.load('shapenet_pointcloud/0110.npz')['points']
-    # data = np.expand_dims(data, axis=0)
-    #
-    # print("object num:", len(data), "samples per object:", data.shape[1])
-    # data = normalize_data(data)
-    # conditioned_object = torch.from_numpy(data.astype(np.float32))
-    #
-    # p0_z = get_prior_z(device, z_dim=z_dim)
-    # net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
-    # net.to(device)
-    # net.load_state_dict(torch.load('./models' + save_fold + '/model_final.pth', map_location='cpu'))
-    #
-    # nb_grid = 128
-    # volume = predict(net, conditioned_object, nb_grid)
+    print("object num:", len(data), "samples per object:", data.shape[1])
+    data = normalize_data(data)
+    conditioned_object = torch.from_numpy(data.astype(np.float32))
 
-    volume = np.load('models' + save_fold + '/3d_sdf_car_interp_9.npy')
+    p0_z = get_prior_z(device, z_dim=z_dim)
+    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
+    net.to(device)
+    net.load_state_dict(torch.load('./models' + save_fold + '/model_0500.pth', map_location='cpu'))
+
+    nb_grid = 128
+    volume = predict(net, conditioned_object, nb_grid)
+
+    # volume = np.load('models' + save_fold + '/3d_sdf_0500.npy')
 
     verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
                                                                    gradient_direction='ascent')
@@ -74,4 +75,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_interp9_1_39.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_01.ply', mesh)
