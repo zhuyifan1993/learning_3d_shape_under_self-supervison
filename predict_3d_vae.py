@@ -42,13 +42,13 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     z_dim = 256
-    save_fold = '/vae/week_shapenet_200car_zdim_256_pbs3000_bs16'
+    save_fold = '/vae/week_shapenet_car_zdim_256_pbs3000_bs20'
 
     DATA_PATH = 'data/ShapeNet'
     split_file = os.path.join(DATA_PATH, "02958343", 'train.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    data = np.load(os.path.join(DATA_PATH, "02958343", model[1], 'pointcloud.npz'))['points']
+    data = np.load(os.path.join(DATA_PATH, "02958343", model[0], 'pointcloud.npz'))['points']
     data = np.expand_dims(data, axis=0)
 
     print("object num:", len(data), "samples per object:", data.shape[1])
@@ -75,4 +75,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_01.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_object_00_0500.ply', mesh)

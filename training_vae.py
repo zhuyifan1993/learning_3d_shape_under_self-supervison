@@ -10,12 +10,24 @@ from network_vae import Network
 
 
 def sample_fake(pts, local_sigma=0.01):
-    sampled = pts + torch.randn_like(pts) * local_sigma
+    """
+    create samples from distribution D (gaussians and uniform dist)
+    Args:
+        pts:
+        local_sigma:
+
+    Returns:
+
+    """
+    B, S, D = pts.size()
+    gaussians = pts + torch.randn_like(pts) * local_sigma
+    uniform = 3 * torch.rand(B, S // 8, D) - 1.5
+    sampled = torch.cat([gaussians, uniform.to(pts.device)], axis=1)
     return sampled
 
 
-def build_network(input_dim=3, p0_z=None, z_dim=128):
-    net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim)
+def build_network(input_dim=3, p0_z=None, z_dim=128, use_kl=None):
+    net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, use_kl=use_kl)
     for k, v in net.named_parameters():
         if 'encoder' in k:
             pass
@@ -25,15 +37,27 @@ def build_network(input_dim=3, p0_z=None, z_dim=128):
                 nn.init.normal_(v, 0.0, std)
             if 'bias' in k:
                 nn.init.constant_(v, 0)
-            if k == 'l_out.weight':
+            if 'l_out.weight' in k:
                 std = np.sqrt(np.pi) / np.sqrt(v.shape[1])
                 nn.init.constant_(v, std)
-            if k == 'l_out.bias':
+            if 'l_out.bias' in k:
                 nn.init.constant_(v, -1)
     return net
 
 
-def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, use_normal):
+def gradient(inputs, outputs):
+    d_points = torch.ones_like(outputs, requires_grad=False, device=outputs.device)
+    points_grad = autograd.grad(
+        outputs=outputs,
+        inputs=inputs,
+        grad_outputs=d_points,
+        create_graph=True,
+        retain_graph=True,
+        only_inputs=True)[0]
+    return points_grad
+
+
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal):
     net.train()
 
     avg_loss = 0
@@ -44,12 +68,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
 
     for batch in data_loader:
 
-        pts = batch['points']
-        B, S, D = pts.size()
-        if use_normal:
-            normal = batch['normals']
-        else:
-            normal = torch.zeros_like(pts)
+        pts = batch['points'].to(device)
 
         # rad = torch.zeros([B, S, 1])
         #
@@ -61,49 +80,29 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_kl, us
 
         # create samples from distribution D
         fake = sample_fake(pts)
-        uniform = 3 * torch.rand(B, S // 8, D) - 1.5
-        xv = torch.cat((fake, uniform), axis=1)
 
-        # KL-divergence
-        pts = pts.to(device)
-        q_z, q_latent_mean, q_latent_std = net.infer_z(pts)
-        q_latent_mean = q_latent_mean.to(device)
-        q_latent_std = q_latent_std.to(device)
-        z = q_z.rsample()
-
-        if use_kl:
-            kl = dist.kl_divergence(q_z, net.p0_z).sum(dim=-1)
-        else:
-            kl = q_latent_mean.abs().mean(dim=-1) + (q_latent_std + 1).abs().mean(dim=-1)
-        kl = kl.mean()
-
-        # reconstruction err
-        z_latent = z.unsqueeze(dim=1).expand(-1, S, -1).to(device)
+        # forward
         pts.requires_grad_()
-        y = net.fcn(pts, z_latent)
-        if use_normal:
-            normal = normal.to(device)
-            gn = autograd.grad(outputs=y, inputs=pts,
-                               grad_outputs=torch.ones(y.size()).to(device),
-                               create_graph=True, retain_graph=True, only_inputs=True)[0]
-            loss_pts = y.abs().mean() + (gn - normal).norm(2, dim=2).mean()
-        else:
-            loss_pts = y.abs().mean()
+        fake.requires_grad_()
+        h_mnfld, h_non_mnfld, kl = net(pts, fake)
 
-        # eikonal term
-        z_xv = z.unsqueeze(dim=1).expand(-1, xv.shape[1], -1).detach().to(device)
-        xv = xv.requires_grad_().to(device)
-        f = net.fcn(xv, z_xv)
-        g = autograd.grad(outputs=f, inputs=xv,
-                          grad_outputs=torch.ones(f.size()).to(device),
-                          create_graph=True, retain_graph=True, only_inputs=True)[0]
-        eikonal_term = ((g.norm(2, dim=2) - 1) ** 2).mean()
+        # reconstruction loss
+        if use_normal:
+            normal = batch['normals'].to(device)
+            pts_grad = gradient(inputs=pts, outputs=h_mnfld)
+            loss_pts = h_mnfld.abs().mean() + (pts_grad - normal).norm(2, dim=2).mean()
+        else:
+            loss_pts = h_mnfld.abs().mean()
+
+        # eikonal loss
+        fake_grad = gradient(inputs=fake, outputs=h_non_mnfld)
+        eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
 
         loss = loss_pts + eik_weight * eikonal_term + kl_weight * kl
 
+        # backpropagation
         optimizer.zero_grad()
         loss.backward()
-
         optimizer.step()
 
         avg_loss += loss.item()

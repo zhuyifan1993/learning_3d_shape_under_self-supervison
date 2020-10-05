@@ -76,12 +76,13 @@ if __name__ == '__main__':
     use_kl = False
     use_normal = True
     z_dim = 256
+    points_batch = 3000
     save_fold = '/vae/shapenet_car_zdim_256_debug'
     os.makedirs('models' + save_fold, exist_ok=True)
 
     # create prior distribution p0_z for latent code z
     p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
+    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, use_kl=use_kl)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -95,24 +96,13 @@ if __name__ == '__main__':
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                             split='train',
-                                            with_normals=use_normal, points_batch=3000)
+                                            with_normals=use_normal, points_batch=points_batch)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=2, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 
     # create optimizer
     lr = 5e-4
     optimizer = optim.Adam(net.parameters(), lr=lr)
-
-    # create evaluation data
-    path = glob.glob('shapenet_pointcloud/*')
-    for i in np.arange(0, 1):
-        data_i = np.load(path[i])['points']
-        if i == 0:
-            data = np.expand_dims(data_i, axis=0)
-        else:
-            data_i = np.expand_dims(data_i, axis=0)
-            data = np.concatenate([data, data_i])
-    data = normalize_data(data)
 
     print("Training!")
     avg_training_loss = []
@@ -123,7 +113,7 @@ if __name__ == '__main__':
         if epoch % 500 == 0 and epoch:
             optimizer.defaults['lr'] = lr / 2
         avg_loss, rec_loss, eik_loss, kl_loss = train(net, train_loader, optimizer, device, eik_weight, kl_weight,
-                                                      use_kl, use_normal)
+                                                      use_normal)
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)
@@ -132,11 +122,6 @@ if __name__ == '__main__':
             epoch + 1, num_epochs, avg_loss, rec_loss, eik_loss, kl_loss))
         if epoch % 500 == 0 and epoch:
             torch.save(net.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
-            # evaluation
-            nb_grid = 128
-            conditioned_object = torch.from_numpy(data[0].astype(np.float32)).unsqueeze(0)
-            volume = predict(net, conditioned_object, nb_grid, device)
-            np.save('models' + save_fold + '/3d_sdf_{0:04d}.npy'.format(epoch), volume)
 
     torch.save(net.state_dict(), 'models' + save_fold + '/model_final.pth')
 
@@ -151,8 +136,3 @@ if __name__ == '__main__':
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.savefig('models' + save_fold + '/loss.png')
-
-    nb_grid = 128
-    conditioned_object = torch.from_numpy(data[0].astype(np.float32)).unsqueeze(0)
-    volume = predict(net, conditioned_object, nb_grid, device)
-    np.save('models' + save_fold + '/3d_sdf.npy', volume)
