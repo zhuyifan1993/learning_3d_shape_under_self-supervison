@@ -86,6 +86,9 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         fake.requires_grad_()
         h_mnfld, h_non_mnfld, kl = net(pts, fake)
 
+        # vae loss
+        kl = kl.mean()
+
         # reconstruction loss
         if use_normal:
             normal = batch['normals'].to(device)

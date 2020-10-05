@@ -77,6 +77,7 @@ if __name__ == '__main__':
     use_normal = True
     z_dim = 256
     points_batch = 3000
+    batch_size = 2
     save_fold = '/vae/shapenet_car_zdim_256_debug'
     os.makedirs('models' + save_fold, exist_ok=True)
 
@@ -98,7 +99,7 @@ if __name__ == '__main__':
                                             split='train',
                                             with_normals=use_normal, points_batch=points_batch)
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=2, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
+        train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 
     # create optimizer
     lr = 5e-4
