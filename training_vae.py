@@ -26,6 +26,19 @@ def sample_fake(pts, local_sigma=0.01):
     return sampled
 
 
+def calculate_local_sigma(pts, knn):
+    B, S, D = pts.size()
+    rad = torch.zeros([B, S, 1])
+
+    for b in range(B):
+        tree = spatial.cKDTree(pts[b])
+        dists, _ = tree.query(pts[b], k=knn)
+
+        rad[b] = torch.from_numpy(np.expand_dims(dists[:, -1], axis=1))
+
+    return rad
+
+
 def build_network(input_dim=3, p0_z=None, z_dim=128, use_kl=None):
     net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, use_kl=use_kl)
     for k, v in net.named_parameters():
@@ -68,18 +81,13 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
 
     for batch in data_loader:
 
-        pts = batch['points'].to(device)
+        pts = batch['points']
 
-        # rad = torch.zeros([B, S, 1])
-        #
-        # for b in range(B):
-        #     tree = spatial.cKDTree(pts[b])
-        #     dists, _ = tree.query(pts[b], k=50)
-        #
-        #     rad[b] = torch.from_numpy(np.expand_dims(dists[:, -1], axis=1))
+        rad = calculate_local_sigma(pts, 50).to(device)
 
         # create samples from distribution D
-        fake = sample_fake(pts)
+        pts = pts.to(device)
+        fake = sample_fake(pts, rad)
 
         # forward
         pts.requires_grad_()

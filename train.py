@@ -44,29 +44,6 @@ def get_prior_z(device, z_dim=128):
     return p0_z
 
 
-def predict(net, conditioned_object, nb_grid, device):
-    x = np.linspace(-1.5, 1.5, nb_grid)
-    y = np.linspace(-1.5, 1.5, nb_grid)
-    z = np.linspace(-1.5, 1.5, nb_grid)
-    X, Y, Z = np.meshgrid(x, y, z)
-
-    X = X.reshape(-1)
-    Y = Y.reshape(-1)
-    Z = Z.reshape(-1)
-    pts = np.stack((X, Y, Z), axis=1)
-    pts = pts.reshape(512, -1, 3)
-
-    val = []
-    net.eval()
-    for p in pts:
-        v = net(torch.Tensor(p).to(device), conditioned_object.to(device))
-        v = v.reshape(-1).detach().cpu().numpy()
-        val.append(v)
-    val = np.concatenate(val)
-    val = val.reshape(nb_grid, nb_grid, nb_grid)
-    return val
-
-
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -111,7 +88,7 @@ if __name__ == '__main__':
     eik_training_loss = []
     kl_training_loss = []
     for epoch in range(num_epochs):
-        if epoch % 500 == 0 and epoch:
+        if epoch % 500 == 0 and epoch >= 1000:
             optimizer.defaults['lr'] = lr / 2
         avg_loss, rec_loss, eik_loss, kl_loss = train(net, train_loader, optimizer, device, eik_weight, kl_weight,
                                                       use_normal)
@@ -121,7 +98,7 @@ if __name__ == '__main__':
         kl_training_loss.append(kl_loss)
         print('Epoch [%d / %d] average training loss: %f rec loss: %f eik loss: %f kl loss %f' % (
             epoch + 1, num_epochs, avg_loss, rec_loss, eik_loss, kl_loss))
-        if epoch % 500 == 0 and epoch:
+        if epoch % 100 == 0 and epoch:
             torch.save(net.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
 
     torch.save(net.state_dict(), 'models' + save_fold + '/model_final.pth')
