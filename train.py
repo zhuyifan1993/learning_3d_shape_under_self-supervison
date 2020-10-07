@@ -55,7 +55,7 @@ if __name__ == '__main__':
     z_dim = 256
     points_batch = 3000
     batch_size = 2
-    save_fold = '/vae/shapenet_car_zdim_256_debug'
+    save_fold = '/exp/shapenet_car_zdim_256'
     os.makedirs('models' + save_fold, exist_ok=True)
 
     # create prior distribution p0_z for latent code z
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                             split='train',
-                                            with_normals=use_normal, points_batch=points_batch)
+                                            with_normals=use_normal, points_batch=points_batch, partial_input=True)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 

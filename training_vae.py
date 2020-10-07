@@ -95,7 +95,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         h_mnfld, h_non_mnfld, kl = net(pts, fake)
 
         # vae loss
-        kl = kl.mean()
+        # kl = kl.mean()
 
         # reconstruction loss
         if use_normal:

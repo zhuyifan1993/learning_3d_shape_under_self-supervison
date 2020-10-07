@@ -1,7 +1,9 @@
 import numpy as np
 import os
+
+import torch
 from open3d import *
-from train_3d_ae import normalize_data
+from train import normalize_data
 import matplotlib.pyplot as plt
 
 
@@ -23,7 +25,7 @@ def main():
 
     """
     DATA_PATH = 'data/ShapeNet'
-    split_file = os.path.join(DATA_PATH, "02958343", 'train.lst')
+    split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
     data = np.load(os.path.join(DATA_PATH, "02958343", model[0], 'pointcloud.npz'))['points']
@@ -31,7 +33,9 @@ def main():
     # data = np.load("shapenet_pointcloud/0000.npz")['points']
     data = np.expand_dims(data, axis=0)
     data = normalize_data(data).squeeze(0)
-    # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:1500:])
+    ind = np.where(np.logical_or(np.logical_or(data[:, 0] < 0, data[:, 1] < 0), data[:, 2] < 0))
+    data = data[ind]
+    # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:50000:])
     np.savetxt('shapenet/scene1.txt', data)
     pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
     print(pcd)

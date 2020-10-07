@@ -112,17 +112,66 @@ def normalize_data(input_data):
     return output_data
 
 
+def create_partial_data(input_data, ind):
+    """
+
+    Args:
+        input_data: complete input data
+        ind: index of input data in 'train.lst'
+
+    Returns:
+        partial_data: synthetic partial data
+        partial_data_ind: index of entries in the pratial data
+    """
+    if ind % 8 == 0:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] < 0, input_data[:, 1] < 0), input_data[:, 2] < 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 1:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] < 0, input_data[:, 1] < 0), input_data[:, 2] > 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 2:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] < 0, input_data[:, 1] > 0), input_data[:, 2] < 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 3:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] < 0, input_data[:, 1] > 0), input_data[:, 2] > 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 4:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] > 0, input_data[:, 1] < 0), input_data[:, 2] < 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 5:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] > 0, input_data[:, 1] < 0), input_data[:, 2] > 0))
+        partial_data = input_data[partial_data_ind]
+    elif ind % 8 == 6:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] > 0, input_data[:, 1] > 0), input_data[:, 2] < 0))
+        partial_data = input_data[partial_data_ind]
+    else:
+        partial_data_ind = np.where(
+            np.logical_or(np.logical_or(input_data[:, 0] > 0, input_data[:, 1] > 0), input_data[:, 2] > 0))
+        partial_data = input_data[partial_data_ind]
+
+    return partial_data, partial_data_ind
+
+
 class ShapenetDataset(data.Dataset):
     """
     shapenet dataset class
     modified from https://github.com/autonomousvision/occupancy_networks/blob/master/im2mesh/data/core.py
     """
 
-    def __init__(self, dataset_folder, fields, categories=None, split=None, points_batch=128 ** 2, with_normals=False):
+    def __init__(self, dataset_folder, fields, categories=None, split=None, points_batch=128 ** 2, with_normals=False,
+                 partial_input=False):
         self.dataset_folder = dataset_folder
         self.fields = fields
         self.points_batch = points_batch
         self.with_normals = with_normals
+        self.partial_input = partial_input
 
         # If categories is None, use all subfolders
         if categories is None:
@@ -184,11 +233,17 @@ class ShapenetDataset(data.Dataset):
                 raise
 
             if isinstance(field_data, dict):
-                pts = torch.from_numpy(normalize_data(field_data['points']))
+                pts = normalize_data(field_data['points'])
+                if self.partial_input:
+                    pts, partial_pts_ind = create_partial_data(pts, idx)
+                pts = torch.from_numpy(pts)
                 random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
                 data['points'] = torch.index_select(pts, 0, random_idx)
                 if self.with_normals:
-                    normals = torch.from_numpy(field_data['normals'])
+                    normals = field_data['normals']
+                    if self.partial_input:
+                        normals = normals[partial_pts_ind]
+                    normals = torch.from_numpy(normals)
                     data['normals'] = torch.index_select(normals, 0, random_idx)
             else:
                 data[field_name] = field_data
