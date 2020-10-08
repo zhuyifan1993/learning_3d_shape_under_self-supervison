@@ -11,6 +11,7 @@ import torch
 import yaml
 from torch.utils import data
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,40 @@ def create_partial_data(input_data, ind):
     return partial_data, partial_data_ind
 
 
+def create_partial_data_with_cutting_plane(input_data, ind):
+    """
+
+    Args:
+        input_data: complete input data
+        ind: index of input data in 'train.lst'
+
+    Returns:
+        partial_data: synthetic partial data
+        partial_data_ind: index of entries in the pratial data
+    """
+    if ind % 4 == 0:
+        r = R.from_euler('zxy', R.random(num=1, random_state=0).as_euler('zxy', degrees=True), degrees=True)
+        data_rot = r.apply(input_data)
+        partial_data_ind = np.where(data_rot[:, 2] > 0)
+        partial_data = input_data[partial_data_ind]
+    elif ind % 4 == 1:
+        r = R.from_euler('zxy', R.random(num=1, random_state=1).as_euler('zxy', degrees=True), degrees=True)
+        data_rot = r.apply(input_data)
+        partial_data_ind = np.where(data_rot[:, 2] > 0)
+        partial_data = input_data[partial_data_ind]
+    elif ind % 4 == 2:
+        r = R.from_euler('zxy', R.random(num=1, random_state=2).as_euler('zxy', degrees=True), degrees=True)
+        data_rot = r.apply(input_data)
+        partial_data_ind = np.where(data_rot[:, 2] > 0)
+        partial_data = input_data[partial_data_ind]
+    else:
+        r = R.from_euler('zxy', R.random(num=1, random_state=3).as_euler('zxy', degrees=True), degrees=True)
+        data_rot = r.apply(input_data)
+        partial_data_ind = np.where(data_rot[:, 2] > 0)
+        partial_data = input_data[partial_data_ind]
+    return partial_data, partial_data_ind
+
+
 class ShapenetDataset(data.Dataset):
     """
     shapenet dataset class
@@ -235,7 +270,7 @@ class ShapenetDataset(data.Dataset):
             if isinstance(field_data, dict):
                 pts = normalize_data(field_data['points'])
                 if self.partial_input:
-                    pts, partial_pts_ind = create_partial_data(pts, idx)
+                    pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx)
                 pts = torch.from_numpy(pts)
                 random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
                 data['points'] = torch.index_select(pts, 0, random_idx)

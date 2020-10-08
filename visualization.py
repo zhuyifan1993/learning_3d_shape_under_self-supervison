@@ -5,6 +5,7 @@ import torch
 from open3d import *
 from train import normalize_data
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation as R
 
 
 def main():
@@ -33,8 +34,14 @@ def main():
     # data = np.load("shapenet_pointcloud/0000.npz")['points']
     data = np.expand_dims(data, axis=0)
     data = normalize_data(data).squeeze(0)
-    ind = np.where(np.logical_or(np.logical_or(data[:, 0] < 0, data[:, 1] < 0), data[:, 2] < 0))
+    # ind = np.where(np.logical_or(np.logical_or(data[:, 0] < 0, data[:, 1] < 0), data[:, 2] < 0))
+    # data = data[ind]
+
+    r = R.from_euler('zxy', R.random(num=1, random_state=0).as_euler('zxy', degrees=True), degrees=True)
+    data_rot = r.apply(data)
+    ind = np.where(data_rot[:, 2] > 0)
     data = data[ind]
+
     # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:50000:])
     np.savetxt('shapenet/scene1.txt', data)
     pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
