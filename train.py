@@ -55,7 +55,7 @@ if __name__ == '__main__':
     z_dim = 256
     points_batch = 3000
     batch_size = 2
-    save_fold = '/exp/shapenet_car_zdim_256'
+    save_fold = '/debug/shapenet_car_zdim_256'
     os.makedirs('models' + save_fold, exist_ok=True)
 
     # create prior distribution p0_z for latent code z

@@ -26,10 +26,11 @@ def main():
 
     """
     DATA_PATH = 'data/ShapeNet'
-    split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
+    split_file = os.path.join(DATA_PATH, "02958343", 'train.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    data = np.load(os.path.join(DATA_PATH, "02958343", model[0], 'pointcloud.npz'))['points']
+    idx = 0
+    data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1205, ::]
     # data = np.load("shapenet_pointcloud/0000.npz")['points']
     data = np.expand_dims(data, axis=0)
@@ -37,9 +38,14 @@ def main():
     # ind = np.where(np.logical_or(np.logical_or(data[:, 0] < 0, data[:, 1] < 0), data[:, 2] < 0))
     # data = data[ind]
 
-    r = R.from_euler('zxy', R.random(num=1, random_state=0).as_euler('zxy', degrees=True), degrees=True)
+    rs = np.random.RandomState(idx)
+    offset = rs.rand() - 0.5
+    r = R.from_euler('zxy', R.random(num=1, random_state=idx).as_euler('zxy', degrees=True), degrees=True)
     data_rot = r.apply(data)
-    ind = np.where(data_rot[:, 2] > 0)
+    ind = np.where(data_rot[:, 1] > offset)
+    selected = len(ind[0]) / len(data)
+    if selected < 0.5:
+        ind = np.where(data_rot[:, 1] < offset)
     data = data[ind]
 
     # np.savetxt('shapenet/scene1.txt', data[np.argsort(data, axis=0)[:, 0]][:50000:])

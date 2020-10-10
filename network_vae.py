@@ -65,7 +65,7 @@ class Network(nn.Module):
             vae_loss = torch.zeros(1)
 
         z_mnfld = z.unsqueeze(dim=1).expand((-1, mnfld_pnts.shape[1], -1))
-        z_non_mnfld = z.unsqueeze(dim=1).expand((-1, non_mnfld_pnts.shape[1], -1)).detach()
+        z_non_mnfld = z.unsqueeze(dim=1).expand((-1, non_mnfld_pnts.shape[1], -1))
 
         h_mnfld = self.decoder(mnfld_pnts, z_mnfld)
         h_non_mnfld = self.decoder(non_mnfld_pnts, z_non_mnfld)

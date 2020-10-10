@@ -171,26 +171,17 @@ def create_partial_data_with_cutting_plane(input_data, ind):
         partial_data: synthetic partial data
         partial_data_ind: index of entries in the pratial data
     """
-    if ind % 4 == 0:
-        r = R.from_euler('zxy', R.random(num=1, random_state=0).as_euler('zxy', degrees=True), degrees=True)
-        data_rot = r.apply(input_data)
-        partial_data_ind = np.where(data_rot[:, 2] > 0)
-        partial_data = input_data[partial_data_ind]
-    elif ind % 4 == 1:
-        r = R.from_euler('zxy', R.random(num=1, random_state=1).as_euler('zxy', degrees=True), degrees=True)
-        data_rot = r.apply(input_data)
-        partial_data_ind = np.where(data_rot[:, 2] > 0)
-        partial_data = input_data[partial_data_ind]
-    elif ind % 4 == 2:
-        r = R.from_euler('zxy', R.random(num=1, random_state=2).as_euler('zxy', degrees=True), degrees=True)
-        data_rot = r.apply(input_data)
-        partial_data_ind = np.where(data_rot[:, 2] > 0)
-        partial_data = input_data[partial_data_ind]
-    else:
-        r = R.from_euler('zxy', R.random(num=1, random_state=3).as_euler('zxy', degrees=True), degrees=True)
-        data_rot = r.apply(input_data)
-        partial_data_ind = np.where(data_rot[:, 2] > 0)
-        partial_data = input_data[partial_data_ind]
+
+    r = R.from_euler('zxy', R.random(num=1, random_state=ind).as_euler('zxy', degrees=True), degrees=True)
+    data_rot = r.apply(input_data)
+    rs = np.random.RandomState(ind)
+    offset = rs.rand() - 0.5
+    partial_data_ind = np.where(data_rot[:, 1] > offset)
+    selected = len(partial_data_ind[0]) / len(input_data)
+    if selected < 0.5:
+        partial_data_ind = np.where(data_rot[:, 1] < offset)
+    partial_data = input_data[partial_data_ind]
+
     return partial_data, partial_data_ind
 
 
