@@ -40,7 +40,7 @@ class Network(nn.Module):
         p0_z (dist): prior distribution for latent code z
     """
 
-    def __init__(self, input_dim, p0_z=None, z_dim=128, use_kl=None):
+    def __init__(self, input_dim, p0_z=None, z_dim=128, use_kl=False):
         super(Network, self).__init__()
         if p0_z is None:
             p0_z = dist.Normal(torch.tensor([]), torch.tensor([]))
@@ -57,10 +57,11 @@ class Network(nn.Module):
         q_z = dist.Normal(mean_z, torch.exp(logstd_z))
         z = q_z.rsample()
         if self.use_kl:
-            vae_loss = dist.kl_divergence(q_z, self.p0_z).sum(dim=-1)
+            device = q_z.mean.device
+            p0_z = dist.Normal(torch.zeros(self.z_dim, device=device), torch.ones(self.z_dim, device=device))
+            vae_loss = dist.kl_divergence(q_z, p0_z).sum(dim=-1)
         else:
             vae_loss = mean_z.abs().mean(dim=-1) + (logstd_z + 1).abs().mean(dim=-1)
-        vae_loss = vae_loss.mean()
         if self.z_dim == 0:
             vae_loss = torch.zeros(1)
 

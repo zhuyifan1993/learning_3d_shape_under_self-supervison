@@ -46,26 +46,33 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     z_dim = 256
-    save_fold = '/exp/shapenet_200car_zdim_256_partial_cutting_plane_no_detach'
+    save_fold = '/exp_new_rs/shapenet_200car_zdim_256_partial_cutting_plane_no_detach_bs20'
 
     DATA_PATH = 'data/ShapeNet'
     split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    data = np.load(os.path.join(DATA_PATH, "02958343", model[2], 'pointcloud.npz'))['points']
-    # ind = np.where(np.logical_or(np.logical_or(data[:, 0] < 0, data[:, 1] < 0), data[:, 2] < 0))
-    r = R.from_euler('zxy', R.random(num=1, random_state=2).as_euler('zxy', degrees=True), degrees=True)
-    data_rot = r.apply(data)
-    ind = np.where(data_rot[:, 2] > 0)
-    data = data[ind]
+    idx = 0
+    data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data = np.expand_dims(data, axis=0)
+    data = normalize_data(data).squeeze(0)
+    r = R.from_euler('zxy', R.random(num=1, random_state=idx).as_euler('zxy', degrees=True), degrees=True)
+    data_rot = r.apply(data)
+    rs = np.random.RandomState(idx)
+    offset = rs.rand() - 0.5
+    ind = np.where(data_rot[:, 1] > offset)
+    selected = len(ind[0]) / len(data)
+    if selected < 0.5:
+        ind = np.where(data_rot[:, 1] < offset)
+    data = data[ind]
 
+    data = np.expand_dims(data, axis=0)
     print("object num:", len(data), "samples per object:", data.shape[1])
-    data = normalize_data(data)
+
     conditioned_input = torch.from_numpy(data.astype(np.float32))
 
     p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim)
+    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, geo_initial=False)
     # net = torch.nn.DataParallel(net).to(device)
 
     net.load_state_dict(torch.load('./models' + save_fold + '/model_final.pth', map_location='cpu'))
@@ -85,4 +92,4 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_car_test2_final.ply', mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_car_test{}_final.ply'.format(idx), mesh)

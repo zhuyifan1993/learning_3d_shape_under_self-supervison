@@ -39,22 +39,24 @@ def calculate_local_sigma(pts, knn):
     return rad
 
 
-def build_network(input_dim=3, p0_z=None, z_dim=128, use_kl=None):
+def build_network(input_dim=3, p0_z=None, z_dim=128, use_kl=False, geo_initial=True):
     net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, use_kl=use_kl)
-    for k, v in net.named_parameters():
-        if 'encoder' in k:
-            pass
-        else:
-            if 'weight' in k:
-                std = np.sqrt(2) / np.sqrt(v.shape[0])
-                nn.init.normal_(v, 0.0, std)
-            if 'bias' in k:
-                nn.init.constant_(v, 0)
-            if 'l_out.weight' in k:
-                std = np.sqrt(np.pi) / np.sqrt(v.shape[1])
-                nn.init.constant_(v, std)
-            if 'l_out.bias' in k:
-                nn.init.constant_(v, -1)
+    if geo_initial:
+        print("Perform geometric initialization!\n")
+        for k, v in net.named_parameters():
+            if 'encoder' in k:
+                pass
+            else:
+                if 'weight' in k:
+                    std = np.sqrt(2) / np.sqrt(v.shape[0])
+                    nn.init.normal_(v, 0.0, std)
+                if 'bias' in k:
+                    nn.init.constant_(v, 0)
+                if 'l_out.weight' in k:
+                    std = np.sqrt(np.pi) / np.sqrt(v.shape[1])
+                    nn.init.constant_(v, std)
+                if 'l_out.bias' in k:
+                    nn.init.constant_(v, -1)
     return net
 
 
@@ -95,7 +97,7 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         h_mnfld, h_non_mnfld, kl = net(pts, fake)
 
         # vae loss
-        # kl = kl.mean()
+        kl = kl.mean()
 
         # reconstruction loss
         if use_normal:
