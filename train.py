@@ -13,8 +13,8 @@ import torch.optim as optim
 from torch import distributions as dist
 
 from utils import dataset
-from training_vae import build_network
-from training_vae import train
+from training import build_network
+from training import train
 
 
 def normalize_data(input_data):
@@ -52,6 +52,7 @@ if __name__ == '__main__':
     num_epochs = 4000
     eik_weight = 0.1
     vae_weight = 1.0e-3
+    variational = True
     use_kl = False
     use_normal = True
     partial_input = True
@@ -59,6 +60,7 @@ if __name__ == '__main__':
     z_dim = 256
     points_batch = 3000
     batch_size = 2
+    lr = 5e-4
 
     # save folder
     save_fold = '/debug/shapenet_car_zdim_256'
@@ -66,7 +68,8 @@ if __name__ == '__main__':
 
     # build network
     p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, use_kl=use_kl, geo_initial=geo_initial)
+    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, variational=variational, use_kl=use_kl,
+                        geo_initial=geo_initial)
 
     # set multi-gpu if available
     if torch.cuda.device_count() > 1:
@@ -86,7 +89,6 @@ if __name__ == '__main__':
         train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 
     # create optimizer
-    lr = 5e-4
     optimizer = optim.Adam(net.parameters(), lr=lr)
     print(optimizer)
 
@@ -97,7 +99,8 @@ if __name__ == '__main__':
     vae_training_loss = []
     for epoch in range(num_epochs):
         if epoch % 500 == 0 and epoch >= 1000:
-            optimizer.defaults['lr'] = lr / 2
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
             print(optimizer)
         avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
                                                        use_normal)

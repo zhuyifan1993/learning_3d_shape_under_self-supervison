@@ -192,12 +192,13 @@ class ShapenetDataset(data.Dataset):
     """
 
     def __init__(self, dataset_folder, fields, categories=None, split=None, points_batch=128 ** 2, with_normals=False,
-                 partial_input=False):
+                 partial_input=False, evaluation=False):
         self.dataset_folder = dataset_folder
         self.fields = fields
         self.points_batch = points_batch
         self.with_normals = with_normals
         self.partial_input = partial_input
+        self.eval = evaluation
 
         # If categories is None, use all subfolders
         if categories is None:
@@ -263,14 +264,20 @@ class ShapenetDataset(data.Dataset):
                 if self.partial_input:
                     pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx)
                 pts = torch.from_numpy(pts)
-                random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
-                data['points'] = torch.index_select(pts, 0, random_idx)
+                if self.eval:
+                    data['points'] = pts
+                else:
+                    random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
+                    data['points'] = torch.index_select(pts, 0, random_idx)
                 if self.with_normals:
                     normals = field_data['normals']
                     if self.partial_input:
                         normals = normals[partial_pts_ind]
                     normals = torch.from_numpy(normals)
-                    data['normals'] = torch.index_select(normals, 0, random_idx)
+                    if self.eval:
+                        data['normals'] = normals
+                    else:
+                        data['normals'] = torch.index_select(normals, 0, random_idx)
             else:
                 data[field_name] = field_data
 
