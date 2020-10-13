@@ -254,7 +254,7 @@ class ShapenetDataset(data.Dataset):
                 field_data = field.load(shape_path, idx, c_idx)
             except Exception:
                 logger.warning(
-                    'Error occured when loading field %s of model %s'
+                    'Error occurred when loading field %s of model %s'
                     % (field_name, shape)
                 )
                 raise

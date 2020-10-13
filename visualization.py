@@ -29,13 +29,21 @@ def main():
     split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    idx = 2
+    idx = 1
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     # data = np.load("shapenet/points_shapenet_32x32x32_train.npy")[1205, ::]
     # data = np.load("shapenet_pointcloud/0000.npz")['points']
-    data = np.expand_dims(data, axis=0)
-    data = normalize_data(data).squeeze(0)
+    data = create_partial_data(data, idx)
 
+    np.savetxt('shapenet/scene1.txt', data)
+    pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
+    print(pcd)
+    draw_geometries([pcd])
+
+
+def create_partial_data(input_data=None, idx=0):
+    data = np.expand_dims(input_data, axis=0)
+    data = normalize_data(data).squeeze(0)
     rs = np.random.RandomState(idx)
     offset = rs.rand() - 0.5
     r = R.from_euler('zxy', R.random(num=1, random_state=idx).as_euler('zxy', degrees=True), degrees=True)
@@ -45,11 +53,7 @@ def main():
     if selected < 0.5:
         ind = np.where(data_rot[:, 1] < offset)
     data = data[ind]
-
-    np.savetxt('shapenet/scene1.txt', data)
-    pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
-    print(pcd)
-    draw_geometries([pcd])
+    return data
 
 
 def sdf():

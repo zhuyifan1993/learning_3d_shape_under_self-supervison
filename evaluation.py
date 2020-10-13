@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from training import build_network
-from train import normalize_data, get_prior_z
+from train import get_prior_z
 from utils import dataset
 
 
@@ -67,12 +67,14 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0800'
+    checkpoint = '1200'
     partial_input = True
     z_dim = 256
     nb_grid = 128
     conditioned_ind1 = 0
     conditioned_ind2 = 769
+    eval_fullsque = False
+    latentsp_interp = True
 
     save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_cutting_plane_no_detach_bs80'
     os.makedirs('sdf' + save_fold, exist_ok=True)
@@ -91,18 +93,20 @@ if __name__ == '__main__':
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=False,
                                               pin_memory=True)
 
-    for ind, data in enumerate(test_loader):
-        conditioned_input = data['points']
-        print("object:", ind + 1, "samples:", conditioned_input.shape[1])
-        volume = predict(net, conditioned_input, nb_grid, device)
-        np.save('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, ind), volume)
+    if eval_fullsque:
+        for ind, data in enumerate(test_loader):
+            conditioned_input = data['points']
+            print("object:", ind + 1, "samples:", conditioned_input.shape[1])
+            volume = predict(net, conditioned_input, nb_grid, device)
+            np.save('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, ind), volume)
 
     # Interpolate in Latent Space
-    x1 = test_dataset.__getitem__(conditioned_ind1)['points'].unsqueeze(0)
-    x2 = test_dataset.__getitem__(conditioned_ind2)['points'].unsqueeze(0)
-    lambda_range = np.linspace(0, 1, 10)
-    for i in range(len(lambda_range)):
-        inter_latent = interpolation(lambda_range[i], net, x1, x2, device)
-        # print("interpolated latent code:", inter_latent)
-        volume = predict(net, inter_latent, nb_grid, device, interp=True)
-        np.save('sdf' + save_fold + '/sdf_interp_{}_{}.npy'.format(checkpoint, i), volume)
+    if latentsp_interp:
+        x1 = test_dataset.__getitem__(conditioned_ind1)['points'].unsqueeze(0)
+        x2 = test_dataset.__getitem__(conditioned_ind2)['points'].unsqueeze(0)
+        lambda_range = np.linspace(0, 1, 10)
+        for i in range(len(lambda_range)):
+            inter_latent = interpolation(lambda_range[i], net, x1, x2, device)
+            # print("interpolated latent code:", inter_latent)
+            volume = predict(net, inter_latent, nb_grid, device, interp=True)
+            np.save('sdf' + save_fold + '/sdf_interp_{}_{}.npy'.format(checkpoint, i), volume)

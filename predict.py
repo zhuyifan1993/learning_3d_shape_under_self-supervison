@@ -46,13 +46,14 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0800'
+    checkpoint = 'final'
+    split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
-    conditioned_ind1 = 0
+    conditioned_ind1 = 1
 
-    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_cutting_plane_no_detach_bs80'
+    save_fold = '/exp_ae/shapenet_car_zdim_256_no_geoinitil'
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, conditioned_ind1))
     except FileNotFoundError:
@@ -62,7 +63,7 @@ if __name__ == '__main__':
         DATA_PATH = 'data/ShapeNet'
         fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
         test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                               split='test', partial_input=partial_input, evaluation=True)
+                                               split=split, partial_input=partial_input, evaluation=True)
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False,
                                                   drop_last=False,
                                                   pin_memory=True)
@@ -88,4 +89,5 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_test_{}_{}.npy'.format(checkpoint, conditioned_ind1), mesh)
+    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind1),
+                               mesh)
