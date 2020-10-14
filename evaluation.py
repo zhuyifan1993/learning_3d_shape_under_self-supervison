@@ -67,8 +67,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '1200'
+    checkpoint = '1400'
     partial_input = True
+    split = 'test'
     z_dim = 256
     nb_grid = 128
     conditioned_ind1 = 0
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     eval_fullsque = False
     latentsp_interp = True
 
-    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_cutting_plane_no_detach_bs80'
+    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
     os.makedirs('sdf' + save_fold, exist_ok=True)
 
     # build network
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     DATA_PATH = 'data/ShapeNet'
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                           split='test', partial_input=partial_input, evaluation=True)
+                                           split=split, partial_input=partial_input, evaluation=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=False,
                                               pin_memory=True)
 

@@ -11,7 +11,7 @@ import open3d as o3d
 import torch
 
 from training import build_network
-from train import normalize_data, get_prior_z
+from train import get_prior_z
 from utils import dataset
 
 
@@ -46,16 +46,16 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = 'final'
+    checkpoint = '1400'
     split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
-    conditioned_ind1 = 1
+    conditioned_ind1 = 0
 
-    save_fold = '/exp_ae/shapenet_car_zdim_256_no_geoinitil'
+    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
     try:
-        volume = np.load('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, conditioned_ind1))
+        volume = np.load('sdf' + save_fold + '/sdf_interp_{}_{}.npy'.format(checkpoint, conditioned_ind1))
     except FileNotFoundError:
         volume = None
 
@@ -89,5 +89,6 @@ if __name__ == '__main__':
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
     os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh('output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind1),
-                               mesh)
+    o3d.io.write_triangle_mesh(
+        'output' + save_fold + '/mesh_interp_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind1),
+        mesh)
