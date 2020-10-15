@@ -70,7 +70,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '1400'
+    checkpoint = '2200'
     partial_input = True
     split = 'test'
     z_dim = 256
@@ -131,4 +131,5 @@ if __name__ == '__main__':
             mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
 
             o3d.io.write_triangle_mesh(
-                'output' + save_fold + '/mesh_{}_{}_interp_{}.ply'.format(split, checkpoint, i), mesh)
+                'output' + save_fold + '/mesh_{}_{}_interp_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind1,
+                                                                                conditioned_ind2, i), mesh)
