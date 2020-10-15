@@ -15,7 +15,7 @@ from train import get_prior_z
 from utils import dataset
 
 
-def predict(net, conditioned_input, nb_grid):
+def predict(net, conditioned_input, nb_grid, device):
     x = np.linspace(-1.5, 1.5, nb_grid)
     y = np.linspace(-1.5, 1.5, nb_grid)
     z = np.linspace(-1.5, 1.5, nb_grid)
@@ -29,11 +29,12 @@ def predict(net, conditioned_input, nb_grid):
 
     val = []
     net.eval()
+    conditioned_input = conditioned_input.to(device)
     latent_code, _ = net.encoder(conditioned_input)
     # print(latent_code)
     latent_code = latent_code.unsqueeze(dim=1).expand((-1, pts.shape[1], -1))
     for p in tqdm.tqdm(pts):
-        v = net.decoder(torch.Tensor(p).unsqueeze(0), latent_code)
+        v = net.decoder(torch.Tensor(p).unsqueeze(0).to(device), latent_code)
         v = v.reshape(-1).detach().cpu().numpy()
         val.append(v)
     val = np.concatenate(val)
@@ -46,16 +47,16 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '1400'
+    checkpoint = 'final'
     split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
-    conditioned_ind1 = 0
+    conditioned_ind = 0
 
-    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
+    save_fold = '/exp_ae/shapenet_200car_zdim_256_no_normalize'
     try:
-        volume = np.load('sdf' + save_fold + '/sdf_interp_{}_{}.npy'.format(checkpoint, conditioned_ind1))
+        volume = np.load('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, conditioned_ind))
     except FileNotFoundError:
         volume = None
 
@@ -68,8 +69,8 @@ if __name__ == '__main__':
                                                   drop_last=False,
                                                   pin_memory=True)
 
-        conditioned_input = test_dataset.__getitem__(conditioned_ind1)['points'].unsqueeze(0)
-        print("object:", conditioned_ind1 + 1, "samples:", conditioned_input.shape[1])
+        conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
+        print("object:", conditioned_ind + 1, "samples:", conditioned_input.shape[1])
 
         p0_z = get_prior_z(device, z_dim=z_dim)
         net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, geo_initial=False)
@@ -77,7 +78,7 @@ if __name__ == '__main__':
 
         net.load_state_dict(torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu'))
 
-        volume = predict(net, conditioned_input, nb_grid)
+        volume = predict(net, conditioned_input, nb_grid, device)
 
     verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
                                                                    gradient_direction='ascent')
@@ -90,5 +91,5 @@ if __name__ == '__main__':
 
     os.makedirs('output' + save_fold, exist_ok=True)
     o3d.io.write_triangle_mesh(
-        'output' + save_fold + '/mesh_interp_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind1),
+        'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind),
         mesh)

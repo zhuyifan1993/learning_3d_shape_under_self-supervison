@@ -54,7 +54,7 @@ class Network(nn.Module):
 
     def forward(self, mnfld_pnts, non_mnfld_pnts):
 
-        vae_loss = torch.zeros(mnfld_pnts.shape[0])
+        vae_loss = torch.zeros(1)
         if self.vae:
             mean_z, logstd_z = self.encoder(mnfld_pnts)
             q_z = dist.Normal(mean_z, torch.exp(logstd_z))

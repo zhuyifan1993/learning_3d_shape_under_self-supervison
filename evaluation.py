@@ -5,6 +5,9 @@ import logging
 import numpy as np
 
 import torch
+from skimage import measure
+
+import open3d as o3d
 
 from training import build_network
 from train import get_prior_z
@@ -78,7 +81,7 @@ if __name__ == '__main__':
     latentsp_interp = True
 
     save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
-    os.makedirs('sdf' + save_fold, exist_ok=True)
+    os.makedirs('output' + save_fold, exist_ok=True)
 
     # build network
     p0_z = get_prior_z(device, z_dim=z_dim)
@@ -99,7 +102,16 @@ if __name__ == '__main__':
             conditioned_input = data['points']
             print("object:", ind + 1, "samples:", conditioned_input.shape[1])
             volume = predict(net, conditioned_input, nb_grid, device)
-            np.save('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, ind), volume)
+            verts, faces, normals, _ = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
+                                                                      gradient_direction='ascent')
+            mesh = o3d.geometry.TriangleMesh()
+
+            mesh.vertices = o3d.utility.Vector3dVector(verts)
+            mesh.triangles = o3d.utility.Vector3iVector(faces)
+            mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
+
+            o3d.io.write_triangle_mesh(
+                'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, ind), mesh)
 
     # Interpolate in Latent Space
     if latentsp_interp:
@@ -110,4 +122,13 @@ if __name__ == '__main__':
             inter_latent = interpolation(lambda_range[i], net, x1, x2, device)
             # print("interpolated latent code:", inter_latent)
             volume = predict(net, inter_latent, nb_grid, device, interp=True)
-            np.save('sdf' + save_fold + '/sdf_interp_{}_{}.npy'.format(checkpoint, i), volume)
+            verts, faces, normals, _ = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
+                                                                      gradient_direction='ascent')
+            mesh = o3d.geometry.TriangleMesh()
+
+            mesh.vertices = o3d.utility.Vector3dVector(verts)
+            mesh.triangles = o3d.utility.Vector3iVector(faces)
+            mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
+
+            o3d.io.write_triangle_mesh(
+                'output' + save_fold + '/mesh_{}_{}_interp_{}.ply'.format(split, checkpoint, i), mesh)
