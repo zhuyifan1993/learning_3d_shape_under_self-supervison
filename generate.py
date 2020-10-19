@@ -12,6 +12,7 @@ import open3d as o3d
 from training import build_network
 from train import get_prior_z
 from utils import dataset
+import utils.plots as plt
 
 
 def predict(net, conditioned_input, nb_grid, device, interp=False):
@@ -70,17 +71,19 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '2200'
+    checkpoint = '0400'
     partial_input = True
     split = 'test'
     z_dim = 256
     nb_grid = 128
     conditioned_ind1 = 0
     conditioned_ind2 = 769
-    eval_fullsque = False
-    latentsp_interp = True
+    eval_fullsque = True
+    latentsp_interp = False
+    save_mesh = True
+    save_pointcloud = True
 
-    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
+    save_fold = '/exp_2000/shapenet_car_zdim_256_partial_vae'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     # build network
@@ -101,17 +104,28 @@ if __name__ == '__main__':
         for ind, data in enumerate(test_loader):
             conditioned_input = data['points']
             print("object:", ind + 1, "samples:", conditioned_input.shape[1])
-            volume = predict(net, conditioned_input, nb_grid, device)
-            verts, faces, normals, _ = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
-                                                                      gradient_direction='ascent')
-            mesh = o3d.geometry.TriangleMesh()
 
-            mesh.vertices = o3d.utility.Vector3dVector(verts)
-            mesh.triangles = o3d.utility.Vector3iVector(faces)
-            mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
+            net.eval()
+            conditioned_input = conditioned_input.to(device)
+            latent_code, _ = net.encoder(conditioned_input)
 
-            o3d.io.write_triangle_mesh(
-                'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, ind), mesh)
+            if not partial_input:
+                input_pc = conditioned_input.squeeze()
+                all_latent = latent_code.repeat(input_pc.shape[0], 1)
+                points = torch.cat([all_latent, input_pc], dim=-1).detach()
+                is_uniform = False
+            else:
+                points = None
+                is_uniform = True
+
+            surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
+                                            mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True, connected=True)
+            if save_mesh:
+                surface['mesh_export'].export(
+                    'output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, ind), 'off')
+            if save_pointcloud:
+                surface['mesh_export'].export(
+                    'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, ind), 'ply')
 
     # Interpolate in Latent Space
     if latentsp_interp:

@@ -260,11 +260,12 @@ class ShapenetDataset(data.Dataset):
                 raise
 
             if isinstance(field_data, dict):
-                pts = normalize_data(field_data['points'])
+                pts = field_data['points']
                 if self.partial_input:
                     pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx)
                 pts = torch.from_numpy(pts)
                 if self.eval:
+                    data['points_tgt'] = field_data['points']
                     data['points'] = pts
                 else:
                     random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
@@ -282,3 +283,6 @@ class ShapenetDataset(data.Dataset):
                 data[field_name] = field_data
 
         return data
+
+    def get_model_dict(self, idx):
+        return self.shapes[idx]

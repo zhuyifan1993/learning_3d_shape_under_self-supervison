@@ -6,13 +6,14 @@ import numpy as np
 from skimage import measure
 import tqdm
 
-import open3d as o3d
+# import open3d as o3d
 
 import torch
 
 from training import build_network
 from train import get_prior_z
 from utils import dataset
+import utils.plots as plt
 
 
 def predict(net, conditioned_input, nb_grid, device):
@@ -47,16 +48,18 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0300'
+    checkpoint = '0400'
     split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
     conditioned_ind = 0
+    save_mesh = True
+    save_pointcloud = True
 
     save_fold = '/exp_2000/shapenet_car_zdim_256_partial_vae'
     try:
-        volume = np.load('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, conditioned_ind))
+        volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))
     except FileNotFoundError:
         volume = None
 
@@ -78,18 +81,24 @@ if __name__ == '__main__':
 
         net.load_state_dict(torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu'))
 
-        volume = predict(net, conditioned_input, nb_grid, device)
+        net.eval()
+        conditioned_input = conditioned_input.to(device)
+        latent_code, _ = net.encoder(conditioned_input)
 
-    verts, faces, normals, values = measure.marching_cubes_lewiner(volume, 0.0, spacing=(1.0, -1.0, 1.0),
-                                                                   gradient_direction='ascent')
+        if not partial_input:
+            input_pc = conditioned_input.squeeze()
+            all_latent = latent_code.repeat(input_pc.shape[0], 1)
+            points = torch.cat([all_latent, input_pc], dim=-1).detach()
+            is_uniform = False
+        else:
+            points = None
+            is_uniform = True
 
-    mesh = o3d.geometry.TriangleMesh()
+        surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
+                                        mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True, connected=True)
+        if save_mesh:
+            surface['mesh_export'].export('output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, conditioned_ind), 'off')
+        if save_pointcloud:
+            surface['mesh_export'].export('output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind), 'ply')
+        print(surface)
 
-    mesh.vertices = o3d.utility.Vector3dVector(verts)
-    mesh.triangles = o3d.utility.Vector3iVector(faces)
-    mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
-
-    os.makedirs('output' + save_fold, exist_ok=True)
-    o3d.io.write_triangle_mesh(
-        'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind),
-        mesh)

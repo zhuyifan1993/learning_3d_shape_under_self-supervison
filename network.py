@@ -19,13 +19,13 @@ class Decoder(nn.Module):
         self.l_out = nn.Linear(512, 1)
 
     def forward(self, x, z):
-        x = torch.cat((x, z), axis=2)
+        x = torch.cat((x, z), dim=-1)
 
         h = F.softplus(self.l1(x), beta=100)
         h = F.softplus(self.l2(h), beta=100)
         h = F.softplus(self.l3(h), beta=100)
         h = F.softplus(self.l4(h), beta=100)
-        h = torch.cat((h, x), axis=2)
+        h = torch.cat((h, x), dim=-1)
         h = F.softplus(self.l5(h), beta=100)
         h = F.softplus(self.l6(h), beta=100)
         h = F.softplus(self.l7(h), beta=100)
