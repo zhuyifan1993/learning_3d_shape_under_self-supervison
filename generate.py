@@ -71,7 +71,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0400'
+    checkpoint = '0500'
     partial_input = True
     split = 'test'
     z_dim = 256

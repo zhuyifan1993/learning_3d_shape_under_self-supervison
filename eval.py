@@ -12,7 +12,7 @@ from im2mesh.utils.io import load_pointcloud
 from train import normalize_data
 
 # hyper-parameters
-checkpoint = '0400'
+checkpoint = '0500'
 split = 'test'
 partial_input = True
 eval_mesh = True

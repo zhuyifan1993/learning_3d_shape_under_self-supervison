@@ -49,14 +49,14 @@ if __name__ == '__main__':
     print('device:', device)
 
     # hyper-parameters
-    num_epochs = 4000
+    num_epochs = 2000
     eik_weight = 0.1
     vae_weight = 1.0e-3
     variational = True
     use_kl = False
     use_normal = True
     partial_input = True
-    geo_initial = True
+    geo_initial = False
     z_dim = 256
     points_batch = 3000
     batch_size = 2

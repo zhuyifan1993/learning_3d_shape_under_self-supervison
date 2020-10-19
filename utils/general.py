@@ -23,15 +23,15 @@ def as_mesh(scene_or_mesh):
             # we lose texture information here
             mesh = trimesh.util.concatenate(
                 tuple(trimesh.Trimesh(vertices=g.vertices, faces=g.faces)
-                    for g in scene_or_mesh.geometry.values()))
+                      for g in scene_or_mesh.geometry.values()))
     else:
-        assert(isinstance(scene_or_mesh, trimesh.Trimesh))
+        assert (isinstance(scene_or_mesh, trimesh.Trimesh))
         mesh = scene_or_mesh
     return mesh
 
 
 def concat_home_dir(path):
-    return os.path.join(os.environ['HOME'],'data',path)
+    return os.path.join(os.environ['HOME'], 'data', path)
 
 
 def get_class(kls):
@@ -51,7 +51,6 @@ def to_cuda(torch_obj):
 
 
 def load_point_cloud_by_file_extension(file_name):
-
     ext = file_name.split('.')[-1]
 
     if ext == "npz" or ext == "npy":

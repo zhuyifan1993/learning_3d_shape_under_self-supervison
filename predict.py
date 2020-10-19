@@ -48,7 +48,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0400'
+    checkpoint = '0500'
     split = 'test'
     partial_input = True
     z_dim = 256
@@ -95,7 +95,7 @@ if __name__ == '__main__':
             is_uniform = True
 
         surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
-                                        mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True, connected=True)
+                                        mc_value=0, is_uniform=is_uniform, verbose=True, save_ply=True, connected=True)
         if save_mesh:
             surface['mesh_export'].export('output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, conditioned_ind), 'off')
         if save_pointcloud:
