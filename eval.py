@@ -34,8 +34,6 @@ evaluator = MeshEvaluator(n_points=100000)
 eval_dicts = []
 
 for it, data in enumerate(tqdm(test_loader)):
-    if it == 1:
-        break
     try:
         model_dict = test_dataset.get_model_dict(it)
     except AttributeError:
@@ -61,7 +59,7 @@ for it, data in enumerate(tqdm(test_loader)):
 
     pointcloud_tgt = data['points_tgt'].squeeze(0).numpy()
     pointcloud_input = data['points'].squeeze(0).numpy()
-    eval_dict['input/ground truth'] = pointcloud_input.shape[0]/pointcloud_tgt.shape[0]
+    eval_dict['input/ground truth'] = pointcloud_input.shape[0] / pointcloud_tgt.shape[0]
 
     # Evaluate mesh
     if eval_mesh:
@@ -89,8 +87,8 @@ for it, data in enumerate(tqdm(test_loader)):
         else:
             print('Warning: pointcloud does not exist: %s' % pointcloud_file)
 
-out_file = os.path.join(output_dir, 'result', 'eval_input_full.pkl')
-out_file_class = os.path.join(output_dir, 'result', 'eval_input.csv')
+out_file = os.path.join(output_dir, 'result', 'eval_input_full_{}_{}.pkl'.format(split, checkpoint))
+out_file_class = os.path.join(output_dir, 'result', 'eval_input_{}_{}.csv'.format(split, checkpoint))
 
 # Create pandas dataframe and save
 eval_df = pd.DataFrame(eval_dicts)
