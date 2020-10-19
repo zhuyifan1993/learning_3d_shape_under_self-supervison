@@ -47,14 +47,14 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '2200'
+    checkpoint = '0300'
     split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
     conditioned_ind = 0
 
-    save_fold = '/exp_4gpu/shapenet_car_zdim_256_partial_nogeoini'
+    save_fold = '/exp_2000/shapenet_car_zdim_256_partial_vae'
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}.npy'.format(checkpoint, conditioned_ind))
     except FileNotFoundError:
