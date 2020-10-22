@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import distributions as dist
-import latent_encoder as le
+import network.latent_encoder as le
 
 
 class Decoder(nn.Module):

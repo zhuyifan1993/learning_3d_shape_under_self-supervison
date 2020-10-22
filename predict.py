@@ -3,14 +3,11 @@ import os
 
 import numpy as np
 
-from skimage import measure
 import tqdm
-
-# import open3d as o3d
 
 import torch
 
-from training import build_network
+from network.training import build_network
 from train import get_prior_z
 from utils import dataset
 import utils.plots as plt
@@ -48,14 +45,14 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0500'
+    checkpoint = '0400'
     split = 'test'
     partial_input = True
     z_dim = 256
     nb_grid = 128
     conditioned_ind = 0
     save_mesh = True
-    save_pointcloud = True
+    save_pointcloud = False
 
     save_fold = '/exp_2000/shapenet_car_zdim_256_partial_vae'
     try:
@@ -65,7 +62,9 @@ if __name__ == '__main__':
 
     if volume is None:
         DATA_PATH = 'data/ShapeNet'
-        fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
+        fields = {
+            'inputs': dataset.PointCloudField('pointcloud.npz')
+        }
         test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                                split=split, partial_input=partial_input, evaluation=True)
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False,
@@ -97,8 +96,9 @@ if __name__ == '__main__':
         surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
                                         mc_value=0, is_uniform=is_uniform, verbose=True, save_ply=True, connected=True)
         if save_mesh:
-            surface['mesh_export'].export('output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, conditioned_ind), 'off')
+            surface['mesh_export'].export(
+                'output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, conditioned_ind), 'off')
         if save_pointcloud:
-            surface['mesh_export'].export('output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind), 'ply')
+            surface['mesh_export'].export(
+                'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind), 'ply')
         print(surface)
-

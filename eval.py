@@ -9,10 +9,9 @@ import torch
 from utils import dataset
 from im2mesh.eval import MeshEvaluator
 from im2mesh.utils.io import load_pointcloud
-from train import normalize_data
 
 # hyper-parameters
-checkpoint = '0500'
+checkpoint = '0400'
 split = 'test'
 partial_input = True
 eval_mesh = True

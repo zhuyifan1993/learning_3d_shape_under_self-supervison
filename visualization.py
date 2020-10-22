@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 import torch
-from open3d import *
+import open3d as o3d
 from train import normalize_data
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
@@ -34,9 +34,9 @@ def main():
     data = create_partial_data(data, idx)
 
     np.savetxt('shapenet/scene1.txt', data)
-    pcd = read_point_cloud('shapenet/scene1.txt', format='xyz')
+    pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
     print(pcd)
-    draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd])
 
 
 def create_partial_data(input_data=None, idx=0):
@@ -71,6 +71,12 @@ def sdf():
     plt.show()
 
 
+def visua_kitti():
+    cloud = o3d.io.read_point_cloud("000002_000385.ply")  # Read the point cloud
+    o3d.visualization.draw_geometries([cloud])  # Visualize the point cloud
+
+
 if __name__ == "__main__":
-    main()
+    # main()
     # sdf()
+    visua_kitti()

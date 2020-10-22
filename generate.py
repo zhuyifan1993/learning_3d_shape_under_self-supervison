@@ -9,7 +9,7 @@ from skimage import measure
 
 import open3d as o3d
 
-from training import build_network
+from network.training import build_network
 from train import get_prior_z
 from utils import dataset
 import utils.plots as plt
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0500'
+    checkpoint = '0400'
     partial_input = True
     split = 'test'
     z_dim = 256

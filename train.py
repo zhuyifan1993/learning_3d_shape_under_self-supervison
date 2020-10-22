@@ -13,8 +13,7 @@ import torch.optim as optim
 from torch import distributions as dist
 
 from utils import dataset
-from training import build_network
-from training import train
+from network.training import build_network, train
 
 
 def normalize_data(input_data):
@@ -111,9 +110,9 @@ if __name__ == '__main__':
         print('Epoch [%d / %d] average training loss: %f rec loss: %f eik loss: %f vae loss %f' % (
             epoch + 1, num_epochs, avg_loss, rec_loss, eik_loss, vae_loss))
         if epoch % 100 == 0 and epoch:
-            torch.save(net.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
+            torch.save(net.module.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
 
-    torch.save(net.state_dict(), 'models' + save_fold + '/model_final.pth')
+    torch.save(net.module.state_dict(), 'models' + save_fold + '/model_final.pth')
 
     # plot loss
     import matplotlib.pyplot as plt

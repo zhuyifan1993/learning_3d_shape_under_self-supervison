@@ -5,7 +5,7 @@ import torch.autograd as autograd
 import torch.nn as nn
 from scipy import spatial
 
-from network import Network
+from network.network import Network
 
 
 def sample_fake(pts, local_sigma=0.01):
