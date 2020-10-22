@@ -160,12 +160,13 @@ def create_partial_data(input_data, ind):
     return partial_data, partial_data_ind
 
 
-def create_partial_data_with_cutting_plane(input_data, ind):
+def create_partial_data_with_cutting_plane(input_data, ind, data_completeness=0.5):
     """
 
     Args:
         input_data: complete input data
         ind: index of input data in 'train.lst'
+        data_completeness: threshold of data completeness
 
     Returns:
         partial_data: synthetic partial data
@@ -178,8 +179,12 @@ def create_partial_data_with_cutting_plane(input_data, ind):
     offset = rs.rand() - 0.5
     partial_data_ind = np.where(data_rot[:, 1] > offset)
     selected = len(partial_data_ind[0]) / len(input_data)
-    if selected < 0.5:
-        partial_data_ind = np.where(data_rot[:, 1] < offset)
+    while selected > data_completeness or selected < data_completeness - 0.1:
+        ind += 1
+        rs = np.random.RandomState(ind)
+        offset = rs.rand() - 0.5
+        partial_data_ind = np.where(data_rot[:, 1] > offset)
+        selected = len(partial_data_ind[0]) / len(input_data)
     partial_data = input_data[partial_data_ind]
 
     return partial_data, partial_data_ind
@@ -192,13 +197,14 @@ class ShapenetDataset(data.Dataset):
     """
 
     def __init__(self, dataset_folder, fields, categories=None, split=None, points_batch=128 ** 2, with_normals=False,
-                 partial_input=False, evaluation=False):
+                 partial_input=False, data_completeness=1, evaluation=False):
         self.dataset_folder = dataset_folder
         self.fields = fields
         self.points_batch = points_batch
         self.with_normals = with_normals
         self.partial_input = partial_input
         self.eval = evaluation
+        self.data_completeness = data_completeness
 
         # If categories is None, use all subfolders
         if categories is None:
@@ -262,7 +268,7 @@ class ShapenetDataset(data.Dataset):
             if isinstance(field_data, dict):
                 pts = field_data['points']
                 if self.partial_input:
-                    pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx)
+                    pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx, self.data_completeness)
                 pts = torch.from_numpy(pts)
                 if self.eval:
                     data['points_tgt'] = field_data['points']
