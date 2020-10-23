@@ -27,7 +27,8 @@ if __name__ == '__main__':
     use_normal = True
     partial_input = True
     data_completeness = 0.7
-    geo_initial = False
+    data_sparsity = 1
+    geo_initial = True
     z_dim = 256
     points_batch = 3000
     batch_size = 2
@@ -55,7 +56,8 @@ if __name__ == '__main__':
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                             split='train', with_normals=use_normal, points_batch=points_batch,
-                                            partial_input=partial_input, data_completeness=data_completeness)
+                                            partial_input=partial_input, data_completeness=data_completeness,
+                                            data_sparsity=data_sparsity)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 

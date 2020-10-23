@@ -13,6 +13,7 @@ import pandas as pd
 split = 'test'
 partial_input = True
 data_completeness = 0.7
+data_sparsity = 1
 
 # create dataloader
 DATA_PATH = 'data/ShapeNet'
@@ -21,7 +22,7 @@ fields = {
 }
 test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                        split=split, partial_input=partial_input, data_completeness=data_completeness,
-                                       evaluation=True)
+                                       data_sparsity=data_sparsity, evaluation=True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False)
 
 eval_dicts = []
@@ -63,4 +64,4 @@ eval_df.set_index(['idx'], inplace=True)
 eval_df_class = eval_df.groupby(by=['class name']).mean()
 
 # Print results
-print('data completeness', eval_df_class.values[0])
+print('data completeness:', '%.2f' % (eval_df_class.values[0][0] * 100), '%')

@@ -73,6 +73,7 @@ if __name__ == '__main__':
     checkpoint = 'final'
     partial_input = True
     data_completeness = 0.7
+    data_sparsity = 1
     split = 'test'
     z_dim = 256
     nb_grid = 128
@@ -98,7 +99,8 @@ if __name__ == '__main__':
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                            split=split, partial_input=partial_input,
-                                           data_completeness=data_completeness, evaluation=True)
+                                           data_completeness=data_completeness, data_sparsity=data_sparsity,
+                                           evaluation=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=False,
                                               pin_memory=True)
 
@@ -125,11 +127,13 @@ if __name__ == '__main__':
                                             connected=True)
             if save_mesh:
                 surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}_{}.off'.format(split, data_completeness, checkpoint, ind),
+                    'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.off'.format(split, data_completeness, data_sparsity,
+                                                                             checkpoint, ind),
                     'off')
             if save_pointcloud:
                 surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}_{}.ply'.format(split, data_completeness, checkpoint, ind),
+                    'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.ply'.format(split, data_completeness, data_sparsity,
+                                                                             checkpoint, ind),
                     'ply')
 
     # Interpolate in Latent Space

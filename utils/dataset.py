@@ -197,7 +197,7 @@ class ShapenetDataset(data.Dataset):
     """
 
     def __init__(self, dataset_folder, fields, categories=None, split=None, points_batch=128 ** 2, with_normals=False,
-                 partial_input=False, data_completeness=1, evaluation=False):
+                 partial_input=False, data_completeness=1, data_sparsity=1, evaluation=False):
         self.dataset_folder = dataset_folder
         self.fields = fields
         self.points_batch = points_batch
@@ -205,6 +205,7 @@ class ShapenetDataset(data.Dataset):
         self.partial_input = partial_input
         self.eval = evaluation
         self.data_completeness = data_completeness
+        self.data_sparsity = data_sparsity
 
         # If categories is None, use all subfolders
         if categories is None:
@@ -266,7 +267,7 @@ class ShapenetDataset(data.Dataset):
                 raise
 
             if isinstance(field_data, dict):
-                pts = field_data['points']
+                pts = field_data['points'][::self.data_sparsity]
                 if self.partial_input:
                     pts, partial_pts_ind = create_partial_data_with_cutting_plane(pts, idx, self.data_completeness)
                 pts = torch.from_numpy(pts)
