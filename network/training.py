@@ -4,8 +4,36 @@ import torch
 import torch.autograd as autograd
 import torch.nn as nn
 from scipy import spatial
+from torch import distributions as dist
 
 from network.network import Network
+
+
+def normalize_data(input_data):
+    """
+
+    Args:
+        input_data: raw data, size=(batch_size, point_samples, point_dimension)
+
+    Returns:
+        output_data: normalized data between [-1, 1]
+
+    """
+    output_data = np.zeros_like(input_data)
+    for i in range(len(input_data)):
+        pts = input_data[i]
+        size = pts.max(axis=0) - pts.min(axis=0)
+        pts = 2 * pts / size.max()
+        pts -= (pts.max(axis=0) + pts.min(axis=0)) / 2
+        output_data[i] = pts
+
+    return output_data
+
+
+def get_prior_z(device, z_dim=128):
+    p0_z = dist.Normal(torch.zeros(z_dim, device=device), torch.ones(z_dim, device=device))
+
+    return p0_z
 
 
 def sample_fake(pts, local_sigma=0.01):

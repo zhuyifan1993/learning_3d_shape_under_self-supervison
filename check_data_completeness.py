@@ -12,7 +12,7 @@ import pandas as pd
 
 split = 'test'
 partial_input = True
-data_completeness = 0.5
+data_completeness = 0.7
 
 # create dataloader
 DATA_PATH = 'data/ShapeNet'

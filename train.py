@@ -10,38 +10,9 @@ import numpy as np
 
 import torch
 import torch.optim as optim
-from torch import distributions as dist
 
 from utils import dataset
-from network.training import build_network, train
-
-
-def normalize_data(input_data):
-    """
-
-    Args:
-        input_data: raw data, size=(batch_size, point_samples, point_dimension)
-
-    Returns:
-        output_data: normalized data between [-1, 1]
-
-    """
-    output_data = np.zeros_like(input_data)
-    for i in range(len(input_data)):
-        pts = input_data[i]
-        size = pts.max(axis=0) - pts.min(axis=0)
-        pts = 2 * pts / size.max()
-        pts -= (pts.max(axis=0) + pts.min(axis=0)) / 2
-        output_data[i] = pts
-
-    return output_data
-
-
-def get_prior_z(device, z_dim=128):
-    p0_z = dist.Normal(torch.zeros(z_dim, device=device), torch.ones(z_dim, device=device))
-
-    return p0_z
-
+from network.training import get_prior_z, build_network, train
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,6 +26,7 @@ if __name__ == '__main__':
     use_kl = False
     use_normal = True
     partial_input = True
+    data_completeness = 0.7
     geo_initial = False
     z_dim = 256
     points_batch = 3000
@@ -83,7 +55,7 @@ if __name__ == '__main__':
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
                                             split='train', with_normals=use_normal, points_batch=points_batch,
-                                            partial_input=partial_input)
+                                            partial_input=partial_input, data_completeness=data_completeness)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
 
@@ -110,9 +82,9 @@ if __name__ == '__main__':
         print('Epoch [%d / %d] average training loss: %f rec loss: %f eik loss: %f vae loss %f' % (
             epoch + 1, num_epochs, avg_loss, rec_loss, eik_loss, vae_loss))
         if epoch % 100 == 0 and epoch:
-            torch.save(net.module.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
+            torch.save(net.state_dict(), 'models' + save_fold + '/model_{0:04d}.pth'.format(epoch))
 
-    torch.save(net.module.state_dict(), 'models' + save_fold + '/model_final.pth')
+    torch.save(net.state_dict(), 'models' + save_fold + '/model_final.pth')
 
     # plot loss
     import matplotlib.pyplot as plt

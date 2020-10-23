@@ -9,8 +9,7 @@ from skimage import measure
 
 import open3d as o3d
 
-from network.training import build_network
-from train import get_prior_z
+from network.training import build_network, get_prior_z
 from utils import dataset
 import utils.plots as plt
 
@@ -71,8 +70,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0400'
+    checkpoint = 'final'
     partial_input = True
+    data_completeness = 0.7
     split = 'test'
     z_dim = 256
     nb_grid = 128
@@ -90,13 +90,15 @@ if __name__ == '__main__':
     p0_z = get_prior_z(device, z_dim=z_dim)
     net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, geo_initial=False)
     net = net.to(device)
-    net.load_state_dict(torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu'))
+    saved_model_state = torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu')
+    net.load_state_dict({k.replace('module.', ''): v for k, v in saved_model_state.items()})
 
     # create dataloader
     DATA_PATH = 'data/ShapeNet'
     fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
     test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                           split=split, partial_input=partial_input, evaluation=True)
+                                           split=split, partial_input=partial_input,
+                                           data_completeness=data_completeness, evaluation=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=False,
                                               pin_memory=True)
 
@@ -119,13 +121,16 @@ if __name__ == '__main__':
                 is_uniform = True
 
             surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
-                                            mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True, connected=True)
+                                            mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True,
+                                            connected=True)
             if save_mesh:
                 surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, ind), 'off')
+                    'output' + save_fold + '/mesh_{}_{}_{}_{}.off'.format(split, data_completeness, checkpoint, ind),
+                    'off')
             if save_pointcloud:
                 surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, ind), 'ply')
+                    'output' + save_fold + '/mesh_{}_{}_{}_{}.ply'.format(split, data_completeness, checkpoint, ind),
+                    'ply')
 
     # Interpolate in Latent Space
     if latentsp_interp:

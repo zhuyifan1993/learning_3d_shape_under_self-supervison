@@ -11,9 +11,10 @@ from im2mesh.eval import MeshEvaluator
 from im2mesh.utils.io import load_pointcloud
 
 # hyper-parameters
-checkpoint = '0400'
+checkpoint = 'final'
 split = 'test'
 partial_input = True
+data_completeness = 0.7
 eval_mesh = True
 eval_pointcloud = True
 
@@ -25,7 +26,8 @@ fields = {
     'inputs': dataset.PointCloudField('pointcloud.npz')
 }
 test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                       split=split, partial_input=partial_input, evaluation=True)
+                                       split=split, partial_input=partial_input, data_completeness=data_completeness,
+                                       evaluation=True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False)
 
 # Evaluator
@@ -62,10 +64,10 @@ for it, data in enumerate(tqdm(test_loader)):
 
     # Evaluate mesh
     if eval_mesh:
-        mesh_file = os.path.join(output_dir, 'mesh_{}_{}_{}.off'.format(split, checkpoint, it))
+        mesh_file = os.path.join(output_dir, 'mesh_{}_{}_{}_{}.off'.format(split, data_completeness, checkpoint, it))
 
         if os.path.exists(mesh_file):
-            mesh = trimesh.load(mesh_file, process=False)
+            mesh = trimesh.load(mesh_file)
             eval_dict_mesh = evaluator.eval_mesh(
                 mesh, pointcloud_tgt)
             for k, v in eval_dict_mesh.items():
@@ -74,11 +76,10 @@ for it, data in enumerate(tqdm(test_loader)):
             print('Warning: mesh does not exist: %s' % mesh_file)
 
     if eval_pointcloud:
-        pointcloud_file = os.path.join(output_dir, 'mesh_{}_{}_{}.ply'.format(split, checkpoint, it))
+        pointcloud_file = os.path.join(output_dir,
+                                       'mesh_{}_{}_{}_{}.ply'.format(split, data_completeness, checkpoint, it))
         if os.path.exists(pointcloud_file):
             pointcloud = load_pointcloud(pointcloud_file).astype(np.float32)
-            # pointcloud = np.expand_dims(pointcloud, axis=0)
-            # pointcloud = normalize_data(pointcloud).squeeze(0)
             eval_dict_pcl = evaluator.eval_pointcloud(
                 pointcloud, pointcloud_tgt)
             for k, v in eval_dict_pcl.items():
@@ -86,8 +87,10 @@ for it, data in enumerate(tqdm(test_loader)):
         else:
             print('Warning: pointcloud does not exist: %s' % pointcloud_file)
 
-out_file = os.path.join(output_dir, 'result', 'eval_input_full_{}_{}.pkl'.format(split, checkpoint))
-out_file_class = os.path.join(output_dir, 'result', 'eval_input_{}_{}.csv'.format(split, checkpoint))
+out_file = os.path.join(output_dir, 'result',
+                        'eval_input_full_{}_{}_{}.pkl'.format(split, data_completeness, checkpoint))
+out_file_class = os.path.join(output_dir, 'result',
+                              'eval_input_{}_{}_{}.csv'.format(split, data_completeness, checkpoint))
 
 # Create pandas dataframe and save
 eval_df = pd.DataFrame(eval_dicts)

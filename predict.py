@@ -7,8 +7,7 @@ import tqdm
 
 import torch
 
-from network.training import build_network
-from train import get_prior_z
+from network.training import build_network, get_prior_z
 from utils import dataset
 import utils.plots as plt
 
@@ -45,9 +44,10 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0400'
+    checkpoint = 'final'
     split = 'test'
     partial_input = True
+    data_completeness = 0.7
     z_dim = 256
     nb_grid = 128
     conditioned_ind = 0
@@ -66,7 +66,8 @@ if __name__ == '__main__':
             'inputs': dataset.PointCloudField('pointcloud.npz')
         }
         test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                               split=split, partial_input=partial_input, evaluation=True)
+                                               split=split, partial_input=partial_input,
+                                               data_completeness=data_completeness, evaluation=True)
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False,
                                                   drop_last=False,
                                                   pin_memory=True)
@@ -78,7 +79,8 @@ if __name__ == '__main__':
         net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, geo_initial=False)
         net = net.to(device)
 
-        net.load_state_dict(torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu'))
+        saved_model_state = torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu')
+        net.load_state_dict({k.replace('module.', ''): v for k, v in saved_model_state.items()})
 
         net.eval()
         conditioned_input = conditioned_input.to(device)
@@ -97,8 +99,10 @@ if __name__ == '__main__':
                                         mc_value=0, is_uniform=is_uniform, verbose=True, save_ply=True, connected=True)
         if save_mesh:
             surface['mesh_export'].export(
-                'output' + save_fold + '/mesh_{}_{}_{}.off'.format(split, checkpoint, conditioned_ind), 'off')
+                'output' + save_fold + '/mesh_{}_{}_{}_{}.off'.format(split, data_completeness, checkpoint,
+                                                                      conditioned_ind), 'off')
         if save_pointcloud:
             surface['mesh_export'].export(
-                'output' + save_fold + '/mesh_{}_{}_{}.ply'.format(split, checkpoint, conditioned_ind), 'ply')
+                'output' + save_fold + '/mesh_{}_{}_{}_{}.ply'.format(split, data_completeness, checkpoint,
+                                                                      conditioned_ind), 'ply')
         print(surface)

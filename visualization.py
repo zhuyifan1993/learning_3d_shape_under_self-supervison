@@ -3,7 +3,6 @@ import os
 
 import torch
 import open3d as o3d
-from train import normalize_data
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 
@@ -30,8 +29,9 @@ def main():
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
     idx = 0
+    data_completeness = 0.7
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
-    data = create_partial_data(data, idx)
+    data = create_partial_data(data, idx, data_completeness=data_completeness)
 
     np.savetxt('shapenet/scene1.txt', data)
     pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
@@ -39,18 +39,21 @@ def main():
     o3d.visualization.draw_geometries([pcd])
 
 
-def create_partial_data(input_data=None, idx=0):
-    data = np.expand_dims(input_data, axis=0)
-    data = normalize_data(data).squeeze(0)
+def create_partial_data(input_data=None, idx=0, data_completeness=0.5):
+    data = input_data
     rs = np.random.RandomState(idx)
     offset = rs.rand() - 0.5
     r = R.from_euler('zxy', R.random(num=1, random_state=idx).as_euler('zxy', degrees=True), degrees=True)
     data_rot = r.apply(data)
     ind = np.where(data_rot[:, 1] > offset)
     selected = len(ind[0]) / len(data)
-    if selected < 0.5:
-        ind = np.where(data_rot[:, 1] < offset)
-    data = data[ind]
+    while selected > data_completeness or selected < data_completeness - 0.1:
+        idx += 1
+        rs = np.random.RandomState(idx)
+        offset = rs.rand() - 0.5
+        ind = np.where(data_rot[:, 1] > offset)
+        selected = len(ind[0]) / len(data)
+    data = input_data[ind]
     return data
 
 
@@ -77,6 +80,6 @@ def visua_kitti():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # sdf()
-    visua_kitti()
+    # visua_kitti()
