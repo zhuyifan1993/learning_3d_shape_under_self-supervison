@@ -134,7 +134,7 @@ def get_surface_trace(points, decoder, latent, resolution, mc_value, is_uniform,
 
         verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
         if save_ply:
-            meshexport = trimesh.Trimesh(verts, faces, normals, vertex_colors=values)
+            meshexport = trimesh.Trimesh(vertices=verts, faces=faces, vertex_normals=normals, vertex_colors=values)
             if connected:
                 connected_comp = meshexport.split(only_watertight=False)
                 max_area = 0

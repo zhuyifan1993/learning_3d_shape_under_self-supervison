@@ -15,11 +15,11 @@ checkpoint = 'final'
 split = 'test'
 partial_input = True
 data_completeness = 0.7
-data_sparsity = 1
+data_sparsity = 100
 eval_mesh = True
 eval_pointcloud = True
 
-output_dir = os.path.join('output', 'exp_2000', 'shapenet_car_zdim_256_partial_vae')
+output_dir = os.path.join('output', 'exp_partial', 'shapenet_car_zdim_256_04_100_pb300')
 
 # create dataloader
 DATA_PATH = 'data/ShapeNet'
@@ -60,6 +60,7 @@ for it, data in enumerate(tqdm(test_loader)):
     eval_dicts.append(eval_dict)
 
     pointcloud_tgt = data['points_tgt'].squeeze(0).numpy()
+    normal_tgt = data['normals_tgt'].squeeze(0).numpy()
     pointcloud_input = data['points'].squeeze(0).numpy()
     eval_dict['input/ground truth'] = pointcloud_input.shape[0] / pointcloud_tgt.shape[0]
 
@@ -72,7 +73,7 @@ for it, data in enumerate(tqdm(test_loader)):
         if os.path.exists(mesh_file):
             mesh = trimesh.load(mesh_file)
             eval_dict_mesh = evaluator.eval_mesh(
-                mesh, pointcloud_tgt)
+                mesh, pointcloud_tgt, normal_tgt)
             for k, v in eval_dict_mesh.items():
                 eval_dict[k + ' (mesh)'] = v
         else:

@@ -283,6 +283,7 @@ class ShapenetDataset(data.Dataset):
                         normals = normals[partial_pts_ind]
                     normals = torch.from_numpy(normals)
                     if self.eval:
+                        data['normals_tgt'] = field_data['normals']
                         data['normals'] = normals
                     else:
                         data['normals'] = torch.index_select(normals, 0, random_idx)
