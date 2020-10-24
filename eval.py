@@ -19,7 +19,7 @@ data_sparsity = 100
 eval_mesh = True
 eval_pointcloud = True
 
-output_dir = os.path.join('output', 'exp_partial', 'shapenet_car_zdim_256_04_100_pb300')
+output_dir = os.path.join('output', 'exp_partial', 'shapenet_car_zdim_256_07_100_pb300')
 
 # create dataloader
 DATA_PATH = 'data/ShapeNet'
@@ -27,7 +27,8 @@ fields = {
     'inputs': dataset.PointCloudField('pointcloud.npz')
 }
 test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
-                                       split=split, partial_input=partial_input, data_completeness=data_completeness,
+                                       split=split, with_normals=True, partial_input=partial_input,
+                                       data_completeness=data_completeness,
                                        data_sparsity=data_sparsity, evaluation=True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False)
 
@@ -73,7 +74,7 @@ for it, data in enumerate(tqdm(test_loader)):
         if os.path.exists(mesh_file):
             mesh = trimesh.load(mesh_file)
             eval_dict_mesh = evaluator.eval_mesh(
-                mesh, pointcloud_tgt, normal_tgt)
+                mesh, pointcloud_tgt)
             for k, v in eval_dict_mesh.items():
                 eval_dict[k + ' (mesh)'] = v
         else:

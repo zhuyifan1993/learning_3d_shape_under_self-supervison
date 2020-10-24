@@ -47,9 +47,9 @@ class MeshEvaluator(object):
             normals_tgt (numpy array): target normals
         '''
         if len(mesh.vertices) != 0 and len(mesh.faces) != 0:
-            pointcloud, idx = mesh.sample(self.n_points, return_index=True)
+            pointcloud = mesh.sample(self.n_points)
             pointcloud = pointcloud.astype(np.float32)
-            normals = mesh.vertex_normals[idx]
+            normals = mesh.vertex_normals
         else:
             pointcloud = np.empty((0, 3))
             normals = np.empty((0, 3))
