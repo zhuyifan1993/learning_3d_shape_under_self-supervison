@@ -28,7 +28,7 @@ def main():
     split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    idx = 0
+    idx = 769
     data_completeness = 0.5
     data_sparsity = 200
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']

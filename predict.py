@@ -47,7 +47,7 @@ if __name__ == '__main__':
     checkpoint = '0400'
     split = 'test'
     partial_input = True
-    data_completeness = 0.7
+    data_completeness = 0.5
     data_sparsity = 100
     z_dim = 256
     nb_grid = 128
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     save_mesh = True
     save_pointcloud = False
 
-    save_fold = '/exp_partial/shapenet_car_zdim_256_07'
+    save_fold = '/exp_partial/shapenet_car_zdim_256_05'
     os.makedirs('output' + save_fold, exist_ok=True)
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))

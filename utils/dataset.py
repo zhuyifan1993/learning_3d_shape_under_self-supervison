@@ -278,7 +278,7 @@ class ShapenetDataset(data.Dataset):
                     random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
                     data['points'] = torch.index_select(pts, 0, random_idx)
                 if self.with_normals:
-                    normals = field_data['normals']
+                    normals = field_data['normals'][::self.data_sparsity]
                     if self.partial_input:
                         normals = normals[partial_pts_ind]
                     normals = torch.from_numpy(normals)
