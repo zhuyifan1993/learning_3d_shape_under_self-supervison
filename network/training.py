@@ -83,7 +83,7 @@ def build_network(input_dim=3, p0_z=None, z_dim=128, variational=False, use_kl=F
                     std = np.sqrt(np.pi) / np.sqrt(v.shape[1])
                     nn.init.constant_(v, std)
                 if 'l_out.bias' in k:
-                    nn.init.constant_(v, -1)
+                    nn.init.constant_(v, -0.5)
     return net
 
 
