@@ -22,15 +22,17 @@ if __name__ == '__main__':
     num_epochs = 2000
     eik_weight = 0.1
     vae_weight = 1.0e-3
+    skip_connection = False
+    input_mapping = True
     variational = True
     use_kl = False
-    use_normal = True
+    use_normal = False
     partial_input = True
     data_completeness = 0.7
-    data_sparsity = 1
-    geo_initial = True
+    data_sparsity = 100
+    geo_initial = False
     z_dim = 256
-    points_batch = 3000
+    points_batch = 300
     batch_size = 2
     lr = 5e-4
 
@@ -40,8 +42,8 @@ if __name__ == '__main__':
 
     # build network
     p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, variational=variational, use_kl=use_kl,
-                        geo_initial=geo_initial)
+    net = build_network(input_dim=512, p0_z=p0_z, z_dim=z_dim, skip_connection=skip_connection, variational=variational,
+                        use_kl=use_kl, geo_initial=geo_initial)
 
     # set multi-gpu if available
     if torch.cuda.device_count() > 1:
@@ -76,7 +78,7 @@ if __name__ == '__main__':
                 param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
             print(optimizer)
         avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
-                                                       use_normal)
+                                                       use_normal, input_mapping)
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)

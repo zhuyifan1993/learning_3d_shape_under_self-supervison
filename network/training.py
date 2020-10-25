@@ -66,8 +66,16 @@ def calculate_local_sigma(pts, knn):
     return rad
 
 
-def build_network(input_dim=3, p0_z=None, z_dim=128, variational=False, use_kl=False, geo_initial=True):
-    net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, variational=variational, use_kl=use_kl)
+def input_encoder(x, a, b):
+    return (np.concatenate([a * np.sin((2. * np.pi * x) @ b.T),
+                            a * np.cos((2. * np.pi * x) @ b.T)], axis=-1) / np.linalg.norm(
+        a)) if a is not None else (x * 2. - 1.)
+
+
+def build_network(input_dim=3, p0_z=None, z_dim=128, skip_connection=True, variational=False, use_kl=False,
+                  geo_initial=True):
+    net = Network(input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, skip_connection=skip_connection, variational=variational,
+                  use_kl=use_kl)
     if geo_initial:
         print("Perform geometric initialization!\n")
         for k, v in net.named_parameters():
@@ -99,7 +107,7 @@ def gradient(inputs, outputs):
     return points_grad
 
 
-def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal):
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal, input_mapping):
     net.train()
 
     avg_loss = 0
@@ -108,15 +116,45 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
     kl_loss = 0
     it = 0
 
+    if input_mapping:
+        embedding_size = 256
+        embedding_method = 'gauss'
+        embedding_param = 12.
+        embed_params = [embedding_method, embedding_size, embedding_param]
+        embedding_method, embedding_size, embedding_scale = embed_params
+        rs = np.random.RandomState(0)
+
+        if embedding_method == 'gauss':
+            print('gauss bvals')
+            bvals = rs.normal(size=[embedding_size, 3]) * embedding_scale
+
+        if embedding_method == 'posenc':
+            print('posenc bvals')
+            bvals = 2. ** np.linspace(0, embedding_scale, embedding_size // 3) - 1
+            bvals = np.reshape(np.eye(3) * bvals[:, None, None], [len(bvals) * 3, 3])
+        if embedding_method == 'basic':
+            print('basic bvals')
+            bvals = np.eye(3)
+
+        if embedding_method == 'none':
+            print('NO abvals')
+            avals = None
+            bvals = None
+        else:
+            avals = np.ones_like(bvals[:, 0])
+
     for batch in data_loader:
 
         pts = batch['points']
+        if input_mapping:
+            pts = input_encoder(pts.numpy(), avals, bvals).astype(np.float32)
+            pts = torch.from_numpy(pts)
 
-        rad = calculate_local_sigma(pts, 50).to(device)
+        # rad = calculate_local_sigma(pts, 50).to(device)
 
         # create samples from distribution D
         pts = pts.to(device)
-        fake = sample_fake(pts, rad)
+        fake = sample_fake(pts)
 
         # forward
         pts.requires_grad_()
