@@ -47,7 +47,7 @@ class Decoder(nn.Module):
 
     def forward(self, x, z):
         if self.input_mapping:
-            x = input_encoder(x, self.avals, self.bvals)
+            x = input_encoder(x, self.avals.to(x.device), self.bvals.to(x.device))
         x = torch.cat((x, z), dim=-1)
 
         h = F.softplus(self.l1(x), beta=100)

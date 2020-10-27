@@ -44,21 +44,21 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0400'
-    split = 'test'
+    checkpoint = 'final'
+    split = 'train'
     partial_input = True
     skip_connection = True
     input_mapping = True
     embedding_method = 'basic'
     data_completeness = 0.7
-    data_sparsity = 10
+    data_sparsity = 1
     z_dim = 0
     nb_grid = 128
     conditioned_ind = 0
     save_mesh = True
     save_pointcloud = False
 
-    save_fold = '/debug/shapenet_car_zdim_256'
+    save_fold = '/exp_input_mapping/shapenet_car_zdim_0_recon'
     os.makedirs('output' + save_fold, exist_ok=True)
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))
