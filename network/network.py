@@ -3,26 +3,51 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import distributions as dist
 import network.latent_encoder as le
+import numpy as np
+
+
+def input_encoder(x, a, b):
+    x_proj = (2. * np.pi * x) @ b.T
+    return torch.cat([a * torch.sin(x_proj), a * torch.cos(x_proj)], dim=-1) / a.norm()
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_dim, z_dim=128, skip_connection=True):
+    def __init__(self, *args, input_dim, z_dim=128, skip_connection=True):
         super(Decoder, self).__init__()
         self.skip_connection = skip_connection
+        try:
+            self.input_mapping = args[0]
+        except IndexError:
+            self.input_mapping = False
+        if self.input_mapping:
+            self.avals = args[1]
+            self.bvals = args[2]
+            self.mapped_input_dim = args[3]
 
-        self.l1 = nn.Linear(input_dim + z_dim, 512)
+        if self.input_mapping:
+            self.l1 = nn.Linear(self.mapped_input_dim + z_dim, 512)
+        else:
+            self.l1 = nn.Linear(input_dim + z_dim, 512)
         self.l2 = nn.Linear(512, 512)
         self.l3 = nn.Linear(512, 512)
         if self.skip_connection:
-            self.l4 = nn.Linear(512, 512 - input_dim - z_dim)
+            if self.input_mapping:
+                self.l4 = nn.Linear(512, 512 * 2 - self.mapped_input_dim - z_dim)
+            else:
+                self.l4 = nn.Linear(512, 512 - input_dim - z_dim)
         else:
             self.l4 = nn.Linear(512, 512)
-        self.l5 = nn.Linear(512, 512)
+        if self.skip_connection and self.input_mapping:
+            self.l5 = nn.Linear(512 * 2, 512)
+        else:
+            self.l5 = nn.Linear(512, 512)
         self.l6 = nn.Linear(512, 512)
         self.l7 = nn.Linear(512, 512)
         self.l_out = nn.Linear(512, 1)
 
     def forward(self, x, z):
+        if self.input_mapping:
+            x = input_encoder(x, self.avals, self.bvals)
         x = torch.cat((x, z), dim=-1)
 
         h = F.softplus(self.l1(x), beta=100)
@@ -31,8 +56,6 @@ class Decoder(nn.Module):
         h = F.softplus(self.l4(h), beta=100)
         if self.skip_connection:
             h = torch.cat((h, x), dim=-1)
-        else:
-            h = h
         h = F.softplus(self.l5(h), beta=100)
         h = F.softplus(self.l6(h), beta=100)
         h = F.softplus(self.l7(h), beta=100)
@@ -47,7 +70,7 @@ class Network(nn.Module):
         p0_z (dist): prior distribution for latent code z
     """
 
-    def __init__(self, input_dim, p0_z=None, z_dim=128, skip_connection=True, variational=False, use_kl=False):
+    def __init__(self, *args, input_dim, p0_z=None, z_dim=128, skip_connection=True, variational=False, use_kl=False):
         super(Network, self).__init__()
         if p0_z is None:
             p0_z = dist.Normal(torch.tensor([]), torch.tensor([]))
@@ -57,7 +80,7 @@ class Network(nn.Module):
         self.vae = variational
 
         self.encoder = le.Encoder(dim=input_dim, z_dim=z_dim)
-        self.decoder = Decoder(input_dim=input_dim, z_dim=z_dim, skip_connection=skip_connection)
+        self.decoder = Decoder(*args, input_dim=input_dim, z_dim=z_dim, skip_connection=skip_connection)
 
     def forward(self, mnfld_pnts, non_mnfld_pnts):
 

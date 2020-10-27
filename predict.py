@@ -7,7 +7,7 @@ import tqdm
 
 import torch
 
-from network.training import build_network, get_prior_z
+from network.training import build_network, get_prior_z, input_encoder_param
 from utils import dataset
 import utils.plots as plt
 
@@ -44,18 +44,21 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = 'final'
+    checkpoint = '0400'
     split = 'test'
     partial_input = True
-    data_completeness = 0.4
-    data_sparsity = 100
-    z_dim = 256
+    skip_connection = True
+    input_mapping = True
+    embedding_method = 'basic'
+    data_completeness = 0.7
+    data_sparsity = 10
+    z_dim = 0
     nb_grid = 128
     conditioned_ind = 0
     save_mesh = True
     save_pointcloud = False
 
-    save_fold = '/exp_partial/shapenet_car_zdim_256_04_100_pb300'
+    save_fold = '/debug/shapenet_car_zdim_256'
     os.makedirs('output' + save_fold, exist_ok=True)
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))
@@ -79,7 +82,14 @@ if __name__ == '__main__':
         print("object:", conditioned_ind + 1, "samples:", conditioned_input.shape[1])
 
         p0_z = get_prior_z(device, z_dim=z_dim)
-        net = build_network(input_dim=3, p0_z=p0_z, z_dim=z_dim, geo_initial=False)
+
+        # input mapping
+        args = ()
+        if input_mapping:
+            args = input_encoder_param(input_mapping, embedding_method, device)
+
+        net = build_network(*args, input_dim=3, p0_z=p0_z, z_dim=z_dim, skip_connection=skip_connection,
+                            geo_initial=False)
         net = net.to(device)
 
         saved_model_state = torch.load('models' + save_fold + '/model_{}.pth'.format(checkpoint), map_location='cpu')
