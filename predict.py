@@ -44,20 +44,22 @@ if __name__ == '__main__':
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # hyper-parameters
-    checkpoint = '0800'
+    checkpoint = '0100'
     split = 'train'
-    partial_input = True
-    skip_connection = True
-    input_mapping = True
-    embedding_method = 'posenc'
-    data_completeness = 0.7
-    data_sparsity = 10
-    z_dim = 0
-    beta = None
     nb_grid = 128
     conditioned_ind = 0
     save_mesh = True
     save_pointcloud = False
+
+    z_dim = 0
+    skip_connection = True
+    input_mapping = True
+    embedding_method = 'basic'
+    beta = 100
+
+    partial_input = True
+    data_completeness = 0.7
+    data_sparsity = 10
 
     save_fold = '/debug/shapenet_car_zdim_256'
     os.makedirs('output' + save_fold, exist_ok=True)

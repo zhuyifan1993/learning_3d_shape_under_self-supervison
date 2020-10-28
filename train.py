@@ -20,23 +20,28 @@ if __name__ == '__main__':
 
     # hyper-parameters
     num_epochs = 2000
-    eik_weight = 0.1
-    vae_weight = 1.0e-3
-    skip_connection = True
-    input_mapping = False
-    embedding_method = 'posenc'
-    variational = False
-    use_kl = False
-    use_normal = False
-    partial_input = False
-    data_completeness = 0.7
-    data_sparsity = 10
-    geo_initial = True
-    z_dim = 0
-    beta = None
     points_batch = 1000
     batch_size = 1
     lr = 5e-4
+
+    use_eik = True
+    variational = False
+    use_kl = False
+    eik_weight = 0.1
+    vae_weight = 1.0e-3
+    z_dim = 0
+
+    geo_initial = True
+    use_normal = False
+
+    skip_connection = True
+    input_mapping = True
+    embedding_method = 'basic'
+    beta = 100
+
+    partial_input = False
+    data_completeness = 0.7
+    data_sparsity = 10
 
     # save folder
     save_fold = '/debug/shapenet_car_zdim_256'
@@ -85,7 +90,7 @@ if __name__ == '__main__':
                 param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
             print(optimizer)
         avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
-                                                       use_normal)
+                                                       use_normal, use_eik)
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)

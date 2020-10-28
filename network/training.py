@@ -138,7 +138,7 @@ def gradient(inputs, outputs):
     return points_grad
 
 
-def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal):
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal, use_eik):
     net.train()
 
     avg_loss = 0
@@ -174,8 +174,11 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
             loss_pts = h_mnfld.abs().mean()
 
         # eikonal loss
-        fake_grad = gradient(inputs=fake, outputs=h_non_mnfld)
-        eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
+        if use_eik:
+            fake_grad = gradient(inputs=fake, outputs=h_non_mnfld)
+            eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
+        else:
+            eikonal_term = torch.zeros([])
 
         loss = loss_pts + eik_weight * eikonal_term + kl_weight * kl
 

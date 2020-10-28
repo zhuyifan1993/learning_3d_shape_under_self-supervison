@@ -90,7 +90,7 @@ class Network(nn.Module):
 
     def forward(self, mnfld_pnts, non_mnfld_pnts):
 
-        vae_loss = torch.zeros(1)
+        vae_loss = torch.zeros([])
         if self.vae:
             mean_z, logstd_z = self.encoder(mnfld_pnts)
             q_z = dist.Normal(mean_z, torch.exp(logstd_z))
