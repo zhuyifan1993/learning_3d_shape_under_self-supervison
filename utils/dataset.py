@@ -237,7 +237,7 @@ class ShapenetDataset(data.Dataset):
                 shapes_c = f.read().split('\n')
 
             # limit data length
-            # shapes_c = shapes_c[:200]
+            shapes_c = shapes_c[:1]
 
             self.shapes += [
                 {'category': c, 'shape': s}

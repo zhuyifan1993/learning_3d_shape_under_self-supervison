@@ -23,8 +23,8 @@ if __name__ == '__main__':
     eik_weight = 0.1
     vae_weight = 1.0e-3
     skip_connection = True
-    input_mapping = True
-    embedding_method = 'basic'
+    input_mapping = False
+    embedding_method = 'posenc'
     variational = False
     use_kl = False
     use_normal = False
@@ -33,6 +33,7 @@ if __name__ == '__main__':
     data_sparsity = 10
     geo_initial = True
     z_dim = 0
+    beta = None
     points_batch = 1000
     batch_size = 1
     lr = 5e-4
@@ -48,7 +49,7 @@ if __name__ == '__main__':
 
     # build network
     p0_z = get_prior_z(device, z_dim=z_dim)
-    net = build_network(*args, input_dim=3, p0_z=p0_z, z_dim=z_dim, skip_connection=skip_connection,
+    net = build_network(*args, input_dim=3, p0_z=p0_z, z_dim=z_dim, beta=beta, skip_connection=skip_connection,
                         variational=variational, use_kl=use_kl, geo_initial=geo_initial)
 
     # set multi-gpu if available

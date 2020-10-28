@@ -103,9 +103,9 @@ def input_encoder_param(input_mapping, embedding_method, device):
     return args
 
 
-def build_network(*args, input_dim=3, p0_z=None, z_dim=128, skip_connection=True, variational=False, use_kl=False,
-                  geo_initial=True):
-    net = Network(*args, input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, skip_connection=skip_connection,
+def build_network(*args, input_dim=3, p0_z=None, z_dim=128, beta=None, skip_connection=True, variational=False,
+                  use_kl=False, geo_initial=True):
+    net = Network(*args, input_dim=input_dim, p0_z=p0_z, z_dim=z_dim, beta=beta, skip_connection=skip_connection,
                   variational=variational, use_kl=use_kl)
     if geo_initial:
         print("Perform geometric initialization!\n")
