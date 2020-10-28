@@ -32,14 +32,15 @@ if __name__ == '__main__':
     z_dim = 0
 
     geo_initial = True
-    use_normal = False
+    use_normal = True
+    enforce_symmetry = True
 
     skip_connection = True
-    input_mapping = True
+    input_mapping = False
     embedding_method = 'basic'
     beta = 100
 
-    partial_input = False
+    partial_input = True
     data_completeness = 0.7
     data_sparsity = 10
 
@@ -90,7 +91,7 @@ if __name__ == '__main__':
                 param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
             print(optimizer)
         avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
-                                                       use_normal, use_eik)
+                                                       use_normal, use_eik, enforce_symmetry)
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)

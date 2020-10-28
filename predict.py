@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     z_dim = 0
     skip_connection = True
-    input_mapping = True
+    input_mapping = False
     embedding_method = 'basic'
     beta = 100
 

@@ -138,7 +138,7 @@ def gradient(inputs, outputs):
     return points_grad
 
 
-def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal, use_eik):
+def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal, use_eik, enforce_symmetry):
     net.train()
 
     avg_loss = 0
@@ -150,6 +150,9 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
     for batch in data_loader:
 
         pts = batch['points']
+        if enforce_symmetry:
+            pts_reflec = pts * torch.tensor([1, 1, -1])
+            pts_reflec = pts_reflec.to(device)
 
         rad = calculate_local_sigma(pts, 50).to(device)
 
@@ -160,7 +163,12 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         # forward
         pts.requires_grad_()
         fake.requires_grad_()
-        h_mnfld, h_non_mnfld, kl = net(pts, fake)
+        if enforce_symmetry:
+            h_mnfld, h_mnfld_reflected, h_non_mnfld, kl = net(pts_reflec, mnfld_pnts=pts, non_mnfld_pnts=fake)
+            h_mnfld_symmetry = (h_mnfld + h_mnfld_reflected) / 2
+        else:
+            h_mnfld, _, h_non_mnfld, kl = net(mnfld_pnts=pts, non_mnfld_pnts=fake)
+            h_mnfld_symmetry = h_mnfld
 
         # vae loss
         kl = kl.mean()
@@ -169,9 +177,9 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         if use_normal:
             normal = batch['normals'].to(device)
             pts_grad = gradient(inputs=pts, outputs=h_mnfld)
-            loss_pts = h_mnfld.abs().mean() + (pts_grad - normal).norm(2, dim=2).mean()
+            loss_pts = h_mnfld_symmetry.abs().mean() + (pts_grad - normal).norm(2, dim=2).mean()
         else:
-            loss_pts = h_mnfld.abs().mean()
+            loss_pts = h_mnfld_symmetry.abs().mean()
 
         # eikonal loss
         if use_eik:

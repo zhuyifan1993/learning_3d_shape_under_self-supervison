@@ -88,7 +88,7 @@ class Network(nn.Module):
         self.encoder = le.Encoder(dim=input_dim, z_dim=z_dim)
         self.decoder = Decoder(*args, input_dim=input_dim, z_dim=z_dim, beta=beta, skip_connection=skip_connection)
 
-    def forward(self, mnfld_pnts, non_mnfld_pnts):
+    def forward(self, *mnfld_pnts_reflected, mnfld_pnts, non_mnfld_pnts):
 
         if self.vae:
             mean_z, logstd_z = self.encoder(mnfld_pnts)
@@ -109,8 +109,12 @@ class Network(nn.Module):
 
         h_mnfld = self.decoder(mnfld_pnts, z_mnfld)
         h_non_mnfld = self.decoder(non_mnfld_pnts, z_non_mnfld)
+        if mnfld_pnts_reflected:
+            h_mnfld_reflected = self.decoder(mnfld_pnts_reflected[0], z_mnfld)
+        else:
+            h_mnfld_reflected = None
 
-        return h_mnfld, h_non_mnfld, vae_loss
+        return h_mnfld, h_mnfld_reflected, h_non_mnfld, vae_loss
 
     def get_z_from_prior(self, size=torch.Size([]), sample=True):
         """ Returns z from prior distribution.
