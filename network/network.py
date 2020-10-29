@@ -4,12 +4,42 @@ import torch.nn.functional as F
 from torch import distributions as dist
 import network.latent_encoder as le
 import numpy as np
-import modules
 
 
 def input_encoder(x, a, b):
     x_proj = (2. * np.pi * x) @ b.T
     return torch.cat([a * torch.sin(x_proj), a * torch.cos(x_proj)], dim=-1) / a.norm()
+
+
+def init_weights_normal(m):
+    if type(m) == nn.Linear:
+        if hasattr(m, 'weight'):
+            nn.init.kaiming_normal_(m.weight, a=0.0, nonlinearity='relu', mode='fan_in')
+
+
+def sine_init(m):
+    with torch.no_grad():
+        if hasattr(m, 'weight'):
+            num_input = m.weight.size(-1)
+            # See supplement Sec. 1.5 for discussion of factor 30
+            m.weight.uniform_(-np.sqrt(6 / num_input) / 30, np.sqrt(6 / num_input) / 30)
+
+
+def first_layer_sine_init(m):
+    with torch.no_grad():
+        if hasattr(m, 'weight'):
+            num_input = m.weight.size(-1)
+            # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
+            m.weight.uniform_(-1 / num_input, 1 / num_input)
+
+
+class Sine(nn.Module):
+    def __init(self):
+        super().__init__()
+
+    def forward(self, input):
+        # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
+        return torch.sin(30 * input)
 
 
 class Decoder(nn.Module):
@@ -50,25 +80,25 @@ class Decoder(nn.Module):
             self.activation = nn.Softplus(beta=beta)
         elif beta == 'sine':
             self.activation = nn.ReLU(inplace=True)
-            self.activation_last = modules.Sine()
-            # self.l1.apply(modules.first_layer_sine_init)
-            # self.l2.apply(modules.sine_init)
-            # self.l3.apply(modules.sine_init)
-            # self.l4.apply(modules.sine_init)
-            # self.l5.apply(modules.sine_init)
-            # self.l6.apply(modules.sine_init)
-            # self.l7.apply(modules.sine_init)
-            # self.l_out.apply(modules.sine_init)
+            self.activation_last = Sine()
+            # self.l1.apply(first_layer_sine_init)
+            # self.l2.apply(sine_init)
+            # self.l3.apply(sine_init)
+            # self.l4.apply(sine_init)
+            # self.l5.apply(sine_init)
+            # self.l6.apply(sine_init)
+            # self.l7.apply(sine_init)
+            # self.l_out.apply(sine_init)
         else:
             self.activation = nn.ReLU(inplace=True)
-            self.l1.apply(modules.init_weights_normal)
-            self.l2.apply(modules.init_weights_normal)
-            self.l3.apply(modules.init_weights_normal)
-            self.l4.apply(modules.init_weights_normal)
-            self.l5.apply(modules.init_weights_normal)
-            self.l6.apply(modules.init_weights_normal)
-            self.l7.apply(modules.init_weights_normal)
-            self.l_out.apply(modules.init_weights_normal)
+            self.l1.apply(init_weights_normal)
+            self.l2.apply(init_weights_normal)
+            self.l3.apply(init_weights_normal)
+            self.l4.apply(init_weights_normal)
+            self.l5.apply(init_weights_normal)
+            self.l6.apply(init_weights_normal)
+            self.l7.apply(init_weights_normal)
+            self.l_out.apply(init_weights_normal)
 
     def forward(self, x, z):
         if self.input_mapping:
