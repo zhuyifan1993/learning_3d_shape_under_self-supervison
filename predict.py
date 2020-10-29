@@ -6,6 +6,7 @@ import numpy as np
 import tqdm
 
 import torch
+import yaml
 
 from network.training import build_network, get_prior_z, input_encoder_param
 from utils import dataset
@@ -43,54 +44,59 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    # hyper-parameters
-    checkpoint = '0100'
-    split = 'train'
-    nb_grid = 128
-    conditioned_ind = 0
-    save_mesh = True
-    save_pointcloud = False
-
-    z_dim = 0
-    skip_connection = True
-    input_mapping = False
-    embedding_method = 'basic'
-    beta = 100
-
-    partial_input = True
-    data_completeness = 0.7
-    data_sparsity = 10
-
     save_fold = '/debug/shapenet_car_zdim_256'
     os.makedirs('output' + save_fold, exist_ok=True)
+
+    CONFIG_PATH = 'models' + save_fold + '/config.yaml'
+    with open(CONFIG_PATH, 'r') as f:
+        cfg = yaml.load(f, Loader=yaml.FullLoader)
+
+    # hyper-parameters
+    checkpoint = cfg['generate']['checkpoint']
+    split = cfg['generate']['split']
+    nb_grid = cfg['generate']['nb_grid']
+    conditioned_ind = cfg['generate']['conditioned_ind']
+    save_mesh = cfg['generate']['save_mesh']
+    save_pointcloud = False
+
+    z_dim = cfg['model']['z_dim']
+    skip_connection = cfg['model']['skip_connection']
+    input_mapping = cfg['training']['input_mapping']
+    embedding_method = cfg['training']['embedding_method']
+    beta = cfg['model']['beta']
+
+    partial_input = cfg['generate']['partial_input']
+    data_completeness = cfg['generate']['data_completeness']
+    data_sparsity = cfg['generate']['data_sparsity']
+
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))
     except FileNotFoundError:
         volume = None
 
     if volume is None:
-        DATA_PATH = 'data/ShapeNet'
+        DATA_PATH = cfg['data']['path']
         fields = {
-            'inputs': dataset.PointCloudField('pointcloud.npz')
+            'inputs': dataset.PointCloudField(cfg['data']['pointcloud_file'])
         }
-        test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
+        category = cfg['data']['classes']
+        test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
                                                split=split, partial_input=partial_input,
                                                data_completeness=data_completeness, data_sparsity=data_sparsity,
                                                evaluation=True)
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False,
-                                                  drop_last=False,
-                                                  pin_memory=True)
+                                                  drop_last=False, pin_memory=True)
 
         conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
-        print("object:", conditioned_ind + 1, "samples:", conditioned_input.shape[1])
-
-        p0_z = get_prior_z(device, z_dim=z_dim)
+        print("object id:", conditioned_ind + 1, "sample points:", conditioned_input.shape[1])
 
         # input mapping
+
         args = ()
         if input_mapping:
             args = input_encoder_param(input_mapping, embedding_method, device)
 
+        p0_z = get_prior_z(device, z_dim=z_dim)
         net = build_network(*args, input_dim=3, p0_z=p0_z, z_dim=z_dim, beta=beta, skip_connection=skip_connection,
                             geo_initial=False)
         net = net.to(device)
@@ -101,6 +107,7 @@ if __name__ == '__main__':
         net.eval()
         conditioned_input = conditioned_input.to(device)
         latent_code, _ = net.encoder(conditioned_input)
+        print(latent_code)
 
         if not partial_input:
             input_pc = conditioned_input.squeeze()

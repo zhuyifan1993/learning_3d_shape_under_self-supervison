@@ -3,6 +3,7 @@ import numpy as np
 import os
 
 import trimesh
+import yaml
 from tqdm import tqdm
 import pandas as pd
 import torch
@@ -10,23 +11,30 @@ from utils import dataset
 from im2mesh.eval import MeshEvaluator
 from im2mesh.utils.io import load_pointcloud
 
-# hyper-parameters
-checkpoint = 'final'
-split = 'test'
-partial_input = True
-data_completeness = 0.7
-data_sparsity = 100
-eval_mesh = True
-eval_pointcloud = True
+save_fold = os.path.join('exp_partial', 'shapenet_car_zdim_256_07_100_pb300')
+output_dir = os.path.join('output', save_fold)
+CONFIG_PATH = os.path.join('models', save_fold)
+with open(CONFIG_PATH, 'r') as f:
+    cfg = yaml.load(f, Loader=yaml.FullLoader)
 
-output_dir = os.path.join('output', 'exp_partial', 'shapenet_car_zdim_256_07_100_pb300')
+# hyper-parameters
+checkpoint = cfg['generate']['checkpoint']
+split = cfg['generate']['split']
+
+save_mesh = cfg['generate']['save_mesh']
+save_pointcloud = cfg['generate']['save_pointcloud']
+
+partial_input = cfg['generate']['partial_input']
+data_completeness = cfg['generate']['data_completeness']
+data_sparsity = cfg['generate']['data_sparsity']
 
 # create dataloader
-DATA_PATH = 'data/ShapeNet'
+DATA_PATH = cfg['data']['path']
 fields = {
-    'inputs': dataset.PointCloudField('pointcloud.npz')
+    'inputs': dataset.PointCloudField(cfg['data']['pointcloud_file'])
 }
-test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
+category = cfg['data']['classes']
+test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
                                        split=split, with_normals=True, partial_input=partial_input,
                                        data_completeness=data_completeness,
                                        data_sparsity=data_sparsity, evaluation=True)

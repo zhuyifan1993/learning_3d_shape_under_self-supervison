@@ -6,6 +6,7 @@
 # software: PyCharm
 import os
 import glob
+import yaml
 import numpy as np
 
 import torch
@@ -18,35 +19,44 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print('device:', device)
 
+    CONFIG_PATH = 'configs/shapenet.yaml'
+    with open(CONFIG_PATH, 'r') as f:
+        cfg = yaml.load(f, Loader=yaml.FullLoader)
+
     # hyper-parameters
-    num_epochs = 2000
-    points_batch = 1000
-    batch_size = 1
-    lr = 5e-4
+    num_epochs = cfg['training']['epochs']
+    points_batch = cfg['training']['subsamples_each_step']
+    batch_size = cfg['training']['batch_size']
+    lr = cfg['training']['lr']
 
-    use_eik = True
-    variational = False
-    use_kl = False
-    eik_weight = 0.1
-    vae_weight = 1.0e-3
-    z_dim = 0
+    use_eik = cfg['model']['use_eik']
+    variational = cfg['model']['variational']
+    use_kl = cfg['model']['use_kl']
+    eik_weight = cfg['model']['eik_weight']
+    vae_weight = cfg['model']['vae_weight']
+    z_dim = cfg['model']['z_dim']
 
-    geo_initial = True
-    use_normal = True
-    enforce_symmetry = True
+    geo_initial = cfg['training']['geo_initial']
+    use_normal = cfg['training']['use_normal']
+    enforce_symmetry = cfg['training']['enforce_symmetry']
 
-    skip_connection = True
-    input_mapping = False
-    embedding_method = 'basic'
-    beta = 100
+    skip_connection = cfg['model']['skip_connection']
+    input_mapping = cfg['training']['input_mapping']
+    embedding_method = cfg['training']['embedding_method']
+    beta = cfg['model']['beta']
 
-    partial_input = True
-    data_completeness = 0.7
-    data_sparsity = 10
+    partial_input = cfg['data']['partial_input']
+    data_completeness = cfg['data']['data_completeness']
+    data_sparsity = cfg['data']['data_sparsity']
 
     # save folder
-    save_fold = '/debug/shapenet_car_zdim_256'
+    save_fold = cfg['dir']['save_fold']
     os.makedirs('models' + save_fold, exist_ok=True)
+
+    # save config file
+    f = open('models' + save_fold + '/config.yaml', "w")
+    yaml.dump(cfg, f)
+    f.close()
 
     # input mapping
     args = ()
@@ -67,9 +77,12 @@ if __name__ == '__main__':
     print('The number of parameters of model is', num_params)
 
     # create dataloader
-    DATA_PATH = 'data/ShapeNet'
-    fields = {'inputs': dataset.PointCloudField('pointcloud.npz')}
-    train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=['02958343'],
+    DATA_PATH = cfg['data']['path']
+    fields = {
+        'inputs': dataset.PointCloudField(cfg['data']['pointcloud_file'])
+    }
+    category = cfg['data']['classes']
+    train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
                                             split='train', with_normals=use_normal, points_batch=points_batch,
                                             partial_input=partial_input, data_completeness=data_completeness,
                                             data_sparsity=data_sparsity)

@@ -29,7 +29,7 @@ def main():
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
     idx = 0
-    data_completeness = 0.5
+    data_completeness = 0.7
     data_sparsity = 1
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
