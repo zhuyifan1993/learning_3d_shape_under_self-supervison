@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch import distributions as dist
 import network.latent_encoder as le
 import numpy as np
+import modules
 
 
 def input_encoder(x, a, b):
@@ -45,10 +46,29 @@ class Decoder(nn.Module):
         self.l7 = nn.Linear(512, 512)
         self.l_out = nn.Linear(512, 1)
 
-        if beta is not None:
+        if str(beta).isdigit():
             self.activation = nn.Softplus(beta=beta)
+        elif beta == 'sine':
+            self.activation = nn.ReLU(inplace=True)
+            self.activation_last = modules.Sine()
+            # self.l1.apply(modules.first_layer_sine_init)
+            # self.l2.apply(modules.sine_init)
+            # self.l3.apply(modules.sine_init)
+            # self.l4.apply(modules.sine_init)
+            # self.l5.apply(modules.sine_init)
+            # self.l6.apply(modules.sine_init)
+            # self.l7.apply(modules.sine_init)
+            # self.l_out.apply(modules.sine_init)
         else:
-            self.activation = nn.ReLU()
+            self.activation = nn.ReLU(inplace=True)
+            self.l1.apply(modules.init_weights_normal)
+            self.l2.apply(modules.init_weights_normal)
+            self.l3.apply(modules.init_weights_normal)
+            self.l4.apply(modules.init_weights_normal)
+            self.l5.apply(modules.init_weights_normal)
+            self.l6.apply(modules.init_weights_normal)
+            self.l7.apply(modules.init_weights_normal)
+            self.l_out.apply(modules.init_weights_normal)
 
     def forward(self, x, z):
         if self.input_mapping:
@@ -63,7 +83,10 @@ class Decoder(nn.Module):
             h = torch.cat((h, x), dim=-1)
         h = self.activation(self.l5(h))
         h = self.activation(self.l6(h))
-        h = self.activation(self.l7(h))
+        if hasattr(self, 'activation_last'):
+            h = self.activation_last(self.l7(h))
+        else:
+            h = self.activation(self.l7(h))
         h = self.l_out(h)
 
         return h

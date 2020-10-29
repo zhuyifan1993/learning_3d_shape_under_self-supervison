@@ -52,10 +52,10 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
-    checkpoint = cfg['generate']['checkpoint']
+    checkpoint = '0200'
     split = cfg['generate']['split']
     nb_grid = cfg['generate']['nb_grid']
-    conditioned_ind = cfg['generate']['conditioned_ind']
+    conditioned_ind = 0
     save_mesh = cfg['generate']['save_mesh']
     save_pointcloud = False
 
