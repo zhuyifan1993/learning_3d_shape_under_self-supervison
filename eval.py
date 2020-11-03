@@ -11,18 +11,17 @@ from utils import dataset
 from im2mesh.eval import MeshEvaluator
 from im2mesh.utils.io import load_pointcloud
 
-save_fold = os.path.join('exp_partial', 'shapenet_car_zdim_256_07_100_pb300')
+save_fold = os.path.join('exp_symm', 'shapenet_car_zdim_256_partial_05_100')
 output_dir = os.path.join('output', save_fold)
-CONFIG_PATH = os.path.join('models', save_fold)
+CONFIG_PATH = os.path.join('models', save_fold, 'config.yaml')
 with open(CONFIG_PATH, 'r') as f:
     cfg = yaml.load(f, Loader=yaml.FullLoader)
 
 # hyper-parameters
 checkpoint = cfg['generate']['checkpoint']
 split = cfg['generate']['split']
-
-save_mesh = cfg['generate']['save_mesh']
-save_pointcloud = cfg['generate']['save_pointcloud']
+eval_mesh = cfg['generate']['save_mesh']
+eval_pointcloud = cfg['generate']['save_pointcloud']
 
 partial_input = cfg['generate']['partial_input']
 data_completeness = cfg['generate']['data_completeness']

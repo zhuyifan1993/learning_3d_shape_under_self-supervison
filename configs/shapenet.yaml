@@ -34,10 +34,10 @@ generate:
   save_pointcloud: True
   partial_input: True
   data_completeness: 0.7
-  data_sparsity: 10
+  data_sparsity: 100
 interpolate:
   latentsp_interp: False
   conditioned_ind1: 0
   conditioned_ind2: 769
 dir:
-  save_fold: /debug/shapenet_car_zdim_256
+  save_fold: /debug/shapenet_car_zdim_0

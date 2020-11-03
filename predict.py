@@ -44,7 +44,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/debug/shapenet_car_zdim_256'
+    save_fold = '/debug/shapenet_car_zdim_0'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     CONFIG_PATH = 'models' + save_fold + '/config.yaml'
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
-    checkpoint = '0200'
+    checkpoint = cfg['generate']['checkpoint']
     split = cfg['generate']['split']
     nb_grid = cfg['generate']['nb_grid']
     conditioned_ind = 0
