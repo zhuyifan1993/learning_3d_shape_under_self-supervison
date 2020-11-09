@@ -12,7 +12,7 @@ model:
   eik_weight: 0.1
   vae_weight: 1.0e-3
   z_dim: 0
-  beta: sine
+  beta: 100
   skip_connection: True
 training:
   epochs: 2000
@@ -22,8 +22,8 @@ training:
   geo_initial: False
   use_normal: True
   enforce_symmetry: True
-  input_mapping: False
-  embedding_method: basic
+  input_mapping: True
+  embedding_method: gauss
 generate:
   eval_fullsque: True
   checkpoint: final

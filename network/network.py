@@ -7,6 +7,11 @@ import numpy as np
 
 
 def input_encoder(x, a, b):
+    """
+    Fourier feature mappings
+    from https://github.com/tancik/fourier-feature-networks/blob/master/Experiments/3d_shape_occupancy.ipynb
+
+    """
     x_proj = (2. * np.pi * x) @ b.T
     return torch.cat([a * torch.sin(x_proj), a * torch.cos(x_proj)], dim=-1) / a.norm()
 
@@ -34,6 +39,11 @@ def first_layer_sine_init(m):
 
 
 class Sine(nn.Module):
+    """
+    sine activation and initialization scheme
+    from https://github.com/vsitzmann/siren/blob/master/modules.py
+
+    """
     def __init(self):
         super().__init__()
 

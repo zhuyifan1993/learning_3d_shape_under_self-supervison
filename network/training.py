@@ -73,8 +73,8 @@ def input_encoder(x, a, b):
 
 def input_encoder_param(input_mapping, embedding_method, device):
     embed_dict = {
-        'gauss': [256, 12.],
-        'posenc': [256, 6.],
+        'gauss': [256, 1.],
+        'posenc': [256, 1.],
         'basic': [None, None],
     }
 
@@ -83,15 +83,15 @@ def input_encoder_param(input_mapping, embedding_method, device):
     rs = np.random.RandomState(0)
 
     if embedding_method == 'gauss':
-        print('gauss bvals')
+        print('input mapping: gaussian Fourier feature mapping')
         bvals = rs.normal(size=[embedding_size, 3]) * embedding_scale
 
     if embedding_method == 'posenc':
-        print('posenc bvals')
+        print('input mapping: positional encoding Fourier feature mapping')
         bvals = 2. ** np.linspace(0, embedding_scale, embedding_size // 3) - 1
         bvals = np.reshape(np.eye(3) * bvals[:, None, None], [len(bvals) * 3, 3])
     if embedding_method == 'basic':
-        print('basic bvals')
+        print('input mapping: basic Fourier feature mapping')
         bvals = np.eye(3)
 
     avals = np.ones_like(bvals[:, 0])

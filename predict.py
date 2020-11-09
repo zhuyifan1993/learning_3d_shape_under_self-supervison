@@ -44,7 +44,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/debug/shapenet_car_zdim_0'
+    save_fold = '/exp_gauss_map/shapenet_car_zdim_0_scale_1'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     CONFIG_PATH = 'models' + save_fold + '/config.yaml'
@@ -52,8 +52,8 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
-    checkpoint = cfg['generate']['checkpoint']
-    split = cfg['generate']['split']
+    checkpoint = 'final'
+    split = 'train'
     nb_grid = cfg['generate']['nb_grid']
     conditioned_ind = 0
     save_mesh = cfg['generate']['save_mesh']
@@ -107,7 +107,7 @@ if __name__ == '__main__':
         net.eval()
         conditioned_input = conditioned_input.to(device)
         latent_code, _ = net.encoder(conditioned_input)
-        print(latent_code)
+        print('latent code:', latent_code)
 
         if not partial_input:
             input_pc = conditioned_input.squeeze()

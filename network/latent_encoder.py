@@ -8,7 +8,8 @@ def maxpool(x, dim=-1, keepdim=False):
 
 
 class Encoder(nn.Module):
-    ''' Latent encoder class.
+    """ Latent encoder class.
+    from https://github.com/autonomousvision/occupancy_networks/blob/master/im2mesh/onet/models/encoder_latent.py
 
     It encodes the input points and returns mean and standard deviation for the
     posterior Gaussian distribution.
@@ -17,7 +18,7 @@ class Encoder(nn.Module):
         z_dim (int): dimension of latent code z
         dim (int): input points dimension
         hidden_dim (int): hidden dimension of the network
-    '''
+    """
 
     def __init__(self, z_dim=128, dim=3, hidden_dim=128):
         super().__init__()

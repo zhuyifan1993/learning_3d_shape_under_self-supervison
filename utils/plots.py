@@ -96,6 +96,12 @@ def plot_surface(decoder, path, epoch, shapename, resolution, mc_value, is_unifo
 
 
 def get_surface_trace(points, decoder, latent, resolution, mc_value, is_uniform, verbose, save_ply, connected=False):
+    """
+    extract surface using marching cube algorithm
+    modified from https://github.com/matanatz/SAL/blob/master/code/utils/plots.py
+
+    """
+
     trace = []
     meshexport = None
 
