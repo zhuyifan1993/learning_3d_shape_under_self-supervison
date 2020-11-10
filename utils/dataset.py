@@ -4,6 +4,7 @@
 # datetime:2020/10/1 23:52
 # file: dataset.py
 # software: PyCharm
+import glob
 import logging
 import os
 
@@ -100,13 +101,13 @@ def normalize_data(input_data):
         input_data: raw data, size=(point_samples, point_dimension)
 
     Returns:
-        output_data: normalized data between [-1, 1]
+        output_data: normalized data between [-0.5, 0.5]
 
     """
 
     pts = input_data
     size = pts.max(axis=0) - pts.min(axis=0)
-    pts = 2 * pts / size.max()
+    pts = pts / size.max()
     pts -= (pts.max(axis=0) + pts.min(axis=0)) / 2
     output_data = pts
 
@@ -294,3 +295,31 @@ class ShapenetDataset(data.Dataset):
 
     def get_model_dict(self, idx):
         return self.shapes[idx]
+
+
+class KITTI360Dataset(data.Dataset):
+    def __init__(self, dataset_folder, split, points_batch=200, evaluation=False):
+        self.dataset_folder = dataset_folder
+        self.split = split
+        self.points_batch = points_batch
+        self.evaluation = evaluation
+
+        self.root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', self.dataset_folder,
+                                     'data_3d_car_pointcloud')
+        self.dirList = sorted(glob.glob(self.root_dir + '\*\*\*'), key=os.path.getmtime)
+
+    def __len__(self):
+        return len(self.dirList)
+
+    def __getitem__(self, idx):
+        data = {}
+        shape_path = self.dirList[idx]
+        pcd = normalize_data(np.load(shape_path).astype(np.float32))
+        pcd = torch.from_numpy(pcd)
+        if self.evaluation:
+            data['points_tgt'] = pcd
+        else:
+            random_idx = torch.randperm(pcd.shape[0])[:self.points_batch]
+            data['points'] = torch.index_select(pcd, 0, random_idx)
+
+        return data
