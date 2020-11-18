@@ -44,6 +44,7 @@ class Sine(nn.Module):
     from https://github.com/vsitzmann/siren/blob/master/modules.py
 
     """
+
     def __init(self):
         super().__init__()
 
@@ -157,10 +158,17 @@ class Network(nn.Module):
             mean_z, logstd_z = self.encoder(mnfld_pnts)
             q_z = dist.Normal(mean_z, torch.exp(logstd_z))
             z = q_z.rsample()
-            if self.use_kl:
+            if self.use_kl == 'kl':
                 device = q_z.mean.device
                 p0_z = dist.Normal(torch.zeros(self.z_dim, device=device), torch.ones(self.z_dim, device=device))
                 vae_loss = dist.kl_divergence(q_z, p0_z).sum(dim=-1)
+            elif self.use_kl == 'both':
+                alpha = 0.1
+                mean_l2 = mean_z.norm(2, dim=-1) ** 2
+                mean_l1 = mean_z.norm(1, dim=-1)
+                logstd_l2 = (logstd_z + 1).norm(2, dim=-1) ** 2
+                logstd_l1 = (logstd_z + 1).norm(1, dim=-1)
+                vae_loss = alpha * (mean_l1 + logstd_l1) + (1 - alpha) * (mean_l2 + logstd_l2)
             else:
                 vae_loss = mean_z.abs().mean(dim=-1) + (logstd_z + 1).abs().mean(dim=-1)
         else:

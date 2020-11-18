@@ -44,30 +44,30 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/exp_gauss_map/shapenet_car_zdim_0_scale_1'
+    save_fold = '/exp_gauss_map/shapenet_car_zdim_0_nomap_scale_1_dense_ps10k'
     os.makedirs('output' + save_fold, exist_ok=True)
 
-    CONFIG_PATH = 'models' + save_fold + '/config.yaml'
-    with open(CONFIG_PATH, 'r') as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
+    # CONFIG_PATH = 'models' + save_fold + '/config.yaml'
+    # with open(CONFIG_PATH, 'r') as f:
+    #     cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
     checkpoint = 'final'
-    split = 'train'
-    nb_grid = cfg['generate']['nb_grid']
+    split = 'test'
+    nb_grid = 128
     conditioned_ind = 0
-    save_mesh = cfg['generate']['save_mesh']
+    save_mesh = True
     save_pointcloud = False
 
-    z_dim = cfg['model']['z_dim']
-    skip_connection = cfg['model']['skip_connection']
-    input_mapping = cfg['training']['input_mapping']
-    embedding_method = cfg['training']['embedding_method']
-    beta = cfg['model']['beta']
+    z_dim = 0
+    skip_connection = True
+    input_mapping = False
+    embedding_method = ''
+    beta = 100
 
-    partial_input = cfg['generate']['partial_input']
-    data_completeness = cfg['generate']['data_completeness']
-    data_sparsity = cfg['generate']['data_sparsity']
+    partial_input = True
+    data_completeness = 0.7
+    data_sparsity = 100
 
     try:
         volume = np.load('sdf' + save_fold + '/sdf_{}_{}_{}.npy'.format(split, checkpoint, conditioned_ind))
@@ -75,19 +75,19 @@ if __name__ == '__main__':
         volume = None
 
     if volume is None:
-        DATA_PATH = cfg['data']['path']
+        DATA_PATH = 'data/ShapeNet'
         fields = {
-            'inputs': dataset.PointCloudField(cfg['data']['pointcloud_file'])
+            'inputs': dataset.PointCloudField('pointcloud.npz')
         }
-        category = cfg['data']['classes']
+        category = ['02958343']
         test_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
                                                split=split, partial_input=partial_input,
                                                data_completeness=data_completeness, data_sparsity=data_sparsity,
                                                evaluation=True)
-        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False,
-                                                  drop_last=False, pin_memory=True)
 
         conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
+        # ds_kitti = dataset.KITTI360Dataset('kitti360Scripts', 'train', evaluation=True)
+        # conditioned_input = ds_kitti.__getitem__(conditioned_ind)['points_tgt'].unsqueeze(0)
         print("object id:", conditioned_ind + 1, "sample points:", conditioned_input.shape[1])
 
         # input mapping
@@ -106,7 +106,12 @@ if __name__ == '__main__':
 
         net.eval()
         conditioned_input = conditioned_input.to(device)
-        latent_code, _ = net.encoder(conditioned_input)
+        latent_code, sigma = net.encoder(conditioned_input)
+
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.hist(np.asarray(latent_code.detach()).squeeze(), bins=np.arange(-0.02, 0.02, 0.001))
+        # plt.show()
         print('latent code:', latent_code)
 
         if not partial_input:
@@ -122,8 +127,8 @@ if __name__ == '__main__':
                                         mc_value=0, is_uniform=is_uniform, verbose=True, save_ply=True, connected=True)
         if save_mesh:
             surface['mesh_export'].export(
-                'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.off'.format(split, data_completeness, data_sparsity,
-                                                                         checkpoint, conditioned_ind), 'off')
+                'output' + save_fold + '/Tempmesh_{}_{}_{}_{}_{}.off'.format(split, data_completeness, data_sparsity,
+                                                                             checkpoint, conditioned_ind), 'off')
         if save_pointcloud:
             surface['mesh_export'].export(
                 'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.ply'.format(split, data_completeness, data_sparsity,

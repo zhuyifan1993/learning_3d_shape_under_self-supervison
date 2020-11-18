@@ -1,3 +1,4 @@
+import matplotlib
 import numpy as np
 import os
 
@@ -29,15 +30,22 @@ def main():
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
     idx = 0
-    data_completeness = 0.7
-    data_sparsity = 1
+    data_completeness = 1
+    data_sparsity = 100
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
 
-    np.savetxt('shapenet/scene1.txt', data)
-    pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
-    print(pcd)
-    o3d.visualization.draw_geometries([pcd])
+    idx = 1
+    data1 = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
+    data1 = create_partial_data(data1, idx, data_completeness=data_completeness)[::data_sparsity]
+
+    plot_pcds(filename=None, pcds=[data, data1], titles=['t', 't'])
+    # plot_pcds_patterns(filename=None, pcds=[data], titles='t')
+
+    # np.savetxt('shapenet/scene1.txt', data)
+    # pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
+    # print(pcd)
+    # o3d.visualization.draw_geometries([pcd])
 
 
 def create_partial_data(input_data=None, idx=0, data_completeness=0.5):
@@ -62,11 +70,11 @@ def sdf():
     data = np.load('3d_sdf.npy')
     v = data[:, :, 64]
     plt.figure(figsize=(6, 6))
-    plt.xlim([-1.5, 1.5])
-    plt.ylim([-1.5, 1.5])
+    plt.xlim([-0.5, 0.5])
+    plt.ylim([-0.5, 0.5])
 
-    xx = np.linspace(-1.5, 1.5, 128)
-    yy = np.linspace(-1.5, 1.5, 128)
+    xx = np.linspace(-0.5, 0.5, 128)
+    yy = np.linspace(-0.5, 0.5, 128)
     X, Y = np.meshgrid(xx, yy)
     plt.contourf(X, Y, v)
     C = plt.contour(X, Y, v)
@@ -80,7 +88,94 @@ def visua_kitti():
     o3d.visualization.draw_geometries([cloud])  # Visualize the point cloud
 
 
+def plot_pcds(filename, pcds, titles, suptitle='', sizes=None, cmap='Reds', zdir='y',
+              xlim=(-0.3, 0.3), ylim=(-0.3, 0.3), zlim=(-0.3, 0.3)):
+    if sizes is None:
+        sizes = [5 for i in range(len(pcds))]
+    fig = plt.figure(figsize=(len(pcds) * 3, 3))
+    for i in range(1):
+        elev = 30
+        azim = -45 + 90 * i
+        for j, (pcd, size) in enumerate(zip(pcds, sizes)):
+            ax = fig.add_subplot(1, len(pcds), i * len(pcds) + j + 1, projection='3d')
+            ax.view_init(elev, azim)
+            ax.scatter(pcd[:, 0], pcd[:, 1], pcd[:, 2], zdir=zdir, s=size, cmap=cmap, vmin=-1, vmax=0.5)
+            ax.set_title(titles[j])
+            ax.set_axis_off()
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_zlim(zlim)
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.9, wspace=0.1, hspace=0.1)
+    plt.suptitle(suptitle)
+    if filename is not None:
+        fig.savefig(filename)
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_pcds_patterns(filename, pcds, titles, suptitle='', sizes=None, cmap='Reds', zdir='y',
+                       xlim=(-0.3, 0.3), ylim=(-0.3, 0.3), zlim=(-0.3, 0.3)):
+    if sizes is None:
+        sizes = [5 for i in range(len(pcds))]
+    fig = plt.figure(figsize=(len(pcds) * 3, 3))
+    for i in range(1):
+        elev = 30
+        azim = -45 + 90 * i
+        for j, (pcd, size) in enumerate(zip(pcds, sizes)):
+            ax = fig.add_subplot(1, len(pcds), i * len(pcds) + j + 1, projection='3d')
+            ax.view_init(elev, azim)
+            ax.scatter(pcd[:, 0], pcd[:, 1], pcd[:, 2], zdir=zdir, cmap=cmap, vmin=-1, vmax=0.5)
+            ax.set_title(titles[j])
+            ax.set_axis_off()
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_zlim(zlim)
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.9, wspace=0.1, hspace=0.1)
+    plt.suptitle(suptitle)
+    if filename is not None:
+        fig.savefig(filename)
+        plt.close(fig)
+    else:
+        plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    # main()
     # sdf()
     # visua_kitti()
+
+    a = np.linspace(-0.02, 0.02, 100)
+    # relu
+    act_relu = torch.nn.ReLU()
+    b = np.asarray(act_relu(torch.from_numpy(a)))
+
+    # softplus
+    # def softplus(beta):
+    #     return lambda x: np.log(1 + np.exp(x * beta)) / beta
+    #
+    # softp100 = softplus(1)
+    # c = softp100(a)
+
+    act_softplus1 = torch.nn.Softplus(beta=1)
+    act_softplus100 = torch.nn.Softplus(beta=100)
+
+    c1 = np.asarray(act_softplus1(torch.from_numpy(a)))
+    c100 = np.asarray(act_softplus100(torch.from_numpy(a)))
+
+    fig = plt.figure(figsize=(13, 5))
+
+    ax = fig.add_subplot(131)
+    ax.plot(a, b)
+    ax.set_ylabel('output')
+    ax.set_title('ReLU')
+    ax = fig.add_subplot(132)
+    ax.plot(a, c1)
+    ax.set_xlabel('input')
+    ax.set_title('Softplus(beta=1)')
+    ax = fig.add_subplot(133)
+    ax.plot(a, c100)
+    ax.set_title('Softplus(beta=100)')
+    plt.suptitle('Activation Function Behaviour')
+
+    plt.show()
