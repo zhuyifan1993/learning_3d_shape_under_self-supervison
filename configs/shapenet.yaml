@@ -2,27 +2,31 @@ data:
   path: data/ShapeNet
   classes: [ '02958343' ]
   pointcloud_file: pointcloud.npz
-  partial_input: True
-  data_completeness: 0.7
-  data_sparsity: 10
+  partial_input: False
+  data_completeness: 0.5
+  data_sparsity: 100
 model:
   use_eik: True
-  variational: False
-  use_kl: False
+  variational: True
+  use_kl: kl
   eik_weight: 0.1
   vae_weight: 1.0e-3
-  z_dim: 0
+  z_dim: 64
   beta: 100
   skip_connection: True
 training:
   epochs: 2000
-  subsamples_each_step: 1000
-  batch_size: 1
+  subsamples_each_step: 300
+  batch_size: 128
   lr: 5.0e-4
+  lr_schedule: True
+  retrieve_model: True
+  retrieve_path: /exp_last_kl/shapenet_car_zdim_64_p1_s100_kle3
+  checkpoint: final
   geo_initial: False
   use_normal: True
-  enforce_symmetry: True
-  input_mapping: True
+  enforce_symmetry: False
+  input_mapping: False
   embedding_method: gauss
 generate:
   eval_fullsque: True

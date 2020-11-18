@@ -29,8 +29,8 @@ def main():
     split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    idx = 0
-    data_completeness = 1
+    idx = 3
+    data_completeness = 0.7
     data_sparsity = 100
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
@@ -39,13 +39,13 @@ def main():
     data1 = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data1 = create_partial_data(data1, idx, data_completeness=data_completeness)[::data_sparsity]
 
-    plot_pcds(filename=None, pcds=[data, data1], titles=['t', 't'])
+    # plot_pcds(filename=None, pcds=[data], titles=[''])
     # plot_pcds_patterns(filename=None, pcds=[data], titles='t')
 
-    # np.savetxt('shapenet/scene1.txt', data)
-    # pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
-    # print(pcd)
-    # o3d.visualization.draw_geometries([pcd])
+    np.savetxt('shapenet/scene1.txt', data)
+    pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
+    print(pcd)
+    o3d.visualization.draw_geometries([pcd])
 
 
 def create_partial_data(input_data=None, idx=0, data_completeness=0.5):
@@ -141,7 +141,7 @@ def plot_pcds_patterns(filename, pcds, titles, suptitle='', sizes=None, cmap='Re
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # sdf()
     # visua_kitti()
 

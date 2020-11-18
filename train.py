@@ -28,6 +28,8 @@ if __name__ == '__main__':
     points_batch = cfg['training']['subsamples_each_step']
     batch_size = cfg['training']['batch_size']
     lr = cfg['training']['lr']
+    use_lr_schedule = cfg['training']['lr_schedule']
+    retrieve_model = cfg['training']['retrieve_model']
 
     use_eik = cfg['model']['use_eik']
     variational = cfg['model']['variational']
@@ -68,6 +70,12 @@ if __name__ == '__main__':
     net = build_network(*args, input_dim=3, p0_z=p0_z, z_dim=z_dim, beta=beta, skip_connection=skip_connection,
                         variational=variational, use_kl=use_kl, geo_initial=geo_initial)
 
+    if retrieve_model:
+        model_path = cfg['training']['retrieve_path']
+        checkpoint = cfg['training']['checkpoint']
+        saved_model_state = torch.load('models' + model_path + '/model_{}.pth'.format(checkpoint), map_location='cpu')
+        net.load_state_dict({k.replace('module.', ''): v for k, v in saved_model_state.items()})
+
     # set multi-gpu if available
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -99,10 +107,11 @@ if __name__ == '__main__':
     eik_training_loss = []
     vae_training_loss = []
     for epoch in range(num_epochs):
-        if epoch % 500 == 0 and epoch >= 1000:
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
-            print(optimizer)
+        if use_lr_schedule:
+            if epoch % 500 == 0 and epoch >= 1000:
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
+                print(optimizer)
         avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
                                                        use_normal, use_eik, enforce_symmetry)
         avg_training_loss.append(avg_loss)
