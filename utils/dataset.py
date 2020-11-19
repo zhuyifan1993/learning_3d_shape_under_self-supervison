@@ -238,7 +238,7 @@ class ShapenetDataset(data.Dataset):
                 shapes_c = f.read().split('\n')
 
             # limit data length
-            shapes_c = shapes_c[:1]
+            shapes_c = shapes_c[:3]
 
             self.shapes += [
                 {'category': c, 'shape': s}
@@ -298,15 +298,15 @@ class ShapenetDataset(data.Dataset):
 
 
 class KITTI360Dataset(data.Dataset):
-    def __init__(self, dataset_folder, split, points_batch=200, evaluation=False):
+    def __init__(self, dataset_folder, split, category, points_batch=200, evaluation=False):
         self.dataset_folder = dataset_folder
         self.split = split
+        self.category = category
         self.points_batch = points_batch
         self.evaluation = evaluation
 
-        self.root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', self.dataset_folder,
-                                     'data_3d_car_pointcloud')
-        self.dirList = sorted(glob.glob(self.root_dir + '\*\*\*'), key=os.path.getmtime)
+        self.root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.dataset_folder, split)
+        self.dirList = sorted(glob.glob(self.root_dir + '\*\{}\*'.format(category)), key=os.path.getmtime)
 
     def __len__(self):
         return len(self.dirList)

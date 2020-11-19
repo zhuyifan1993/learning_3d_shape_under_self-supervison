@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import cycle
 
 import torch
 import torch.autograd as autograd
@@ -184,6 +185,91 @@ def train(net, data_loader, optimizer, device, eik_weight, kl_weight, use_normal
         # eikonal loss
         if use_eik:
             fake_grad = gradient(inputs=fake, outputs=h_non_mnfld)
+            eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
+        else:
+            eikonal_term = torch.zeros([], device=device)
+
+        loss = loss_pts + eik_weight * eikonal_term + kl_weight * kl
+
+        # backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        avg_loss += loss.item()
+        rec_loss += loss_pts.item()
+        eik_loss += eikonal_term.item()
+        kl_loss += kl.item()
+        it += 1
+
+    avg_loss /= it
+    rec_loss /= it
+    eik_loss /= it
+    kl_loss /= it
+
+    return avg_loss, rec_loss, eik_loss, kl_loss
+
+
+def joint_train(net, data_loader1, data_loader2, optimizer, device, eik_weight, kl_weight, use_normal, use_eik,
+                enforce_symmetry, kitti_weight):
+    net.train()
+
+    avg_loss = 0
+    rec_loss = 0
+    eik_loss = 0
+    kl_loss = 0
+    it = 0
+
+    for batch in zip(data_loader1, data_loader2):
+
+        pts1 = batch[0]['points']
+        pts2 = batch[1]['points']
+        if enforce_symmetry:
+            pts1_reflec = pts1 * torch.tensor([1, 1, -1])
+            pts1_reflec = pts1_reflec.to(device)
+            pts2_reflec = pts2 * torch.tensor([1, 1, -1])
+            pts2_reflec = pts2_reflec.to(device)
+
+        rad1 = calculate_local_sigma(pts1, 50).to(device)
+        rad2 = calculate_local_sigma(pts2, 50).to(device)
+
+        # create samples from distribution D
+        pts1 = pts1.to(device)
+        fake1 = sample_fake(pts1, rad1)
+        pts2 = pts2.to(device)
+        fake2 = sample_fake(pts2, rad2)
+
+        # forward
+        pts1.requires_grad_()
+        fake1.requires_grad_()
+        pts2.requires_grad_()
+        fake2.requires_grad_()
+        if enforce_symmetry:
+            h_mnfld1, h_mnfld_reflected1, h_non_mnfld1, kl = net(pts1_reflec, mnfld_pnts=pts1, non_mnfld_pnts=fake1)
+            h_mnfld_symmetry1 = (h_mnfld1 + h_mnfld_reflected1) / 2
+            h_mnfld2, h_mnfld_reflected2, _, _ = net(pts2_reflec, mnfld_pnts=pts2, non_mnfld_pnts=fake2)
+            h_mnfld_symmetry2 = (h_mnfld2 + h_mnfld_reflected2) / 2
+        else:
+            h_mnfld1, _, h_non_mnfld1, kl = net(mnfld_pnts=pts1, non_mnfld_pnts=fake1)
+            h_mnfld_symmetry1 = h_mnfld1
+            h_mnfld2, _, _, _ = net(mnfld_pnts=pts2, non_mnfld_pnts=fake2)
+            h_mnfld_symmetry2 = h_mnfld2
+
+        # vae loss
+        kl = kl.mean()
+
+        # reconstruction loss
+        if use_normal:
+            normal = batch[0]['normals'].to(device)
+            pts_grad = gradient(inputs=pts1, outputs=h_mnfld1)
+            loss_pts = h_mnfld_symmetry1.abs().mean() + (
+                    pts_grad - normal).norm(2, dim=2).mean() + h_mnfld_symmetry2.abs().mean() * kitti_weight
+        else:
+            loss_pts = h_mnfld_symmetry1.abs().mean() + h_mnfld_symmetry2.abs().mean() * kitti_weight
+
+        # eikonal loss
+        if use_eik:
+            fake_grad = gradient(inputs=fake1, outputs=h_non_mnfld1)
             eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
         else:
             eikonal_term = torch.zeros([], device=device)

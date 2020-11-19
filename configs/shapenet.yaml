@@ -5,6 +5,10 @@ data:
   partial_input: False
   data_completeness: 0.5
   data_sparsity: 100
+  kitti_pcl_path: data/KITTI-360/data_3d_pointcloud
+  kitti_class: car
+  kitti_weight: 10
+  dataset: j
 model:
   use_eik: True
   variational: True
@@ -16,11 +20,11 @@ model:
   skip_connection: True
 training:
   epochs: 2000
-  subsamples_each_step: 300
-  batch_size: 128
+  subsamples_each_step: 200
+  batch_size: 2
   lr: 5.0e-4
   lr_schedule: True
-  retrieve_model: True
+  retrieve_model: False
   retrieve_path: /exp_last_kl/shapenet_car_zdim_64_p1_s100_kle3
   checkpoint: final
   geo_initial: False

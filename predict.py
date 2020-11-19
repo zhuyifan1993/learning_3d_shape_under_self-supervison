@@ -6,6 +6,7 @@ import numpy as np
 import tqdm
 
 import torch
+from torch import distributions as dist
 import yaml
 
 from network.training import build_network, get_prior_z, input_encoder_param
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/exp_gauss_map/shapenet_car_zdim_0_nomap_scale_1_dense_ps10k'
+    save_fold = '/exp_last/shapenet_all_zdim_256_p1_s50'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     # CONFIG_PATH = 'models' + save_fold + '/config.yaml'
@@ -52,14 +53,14 @@ if __name__ == '__main__':
     #     cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
-    checkpoint = 'final'
+    checkpoint = '1000'
     split = 'test'
     nb_grid = 128
     conditioned_ind = 0
     save_mesh = True
     save_pointcloud = False
 
-    z_dim = 0
+    z_dim = 256
     skip_connection = True
     input_mapping = False
     embedding_method = ''
@@ -85,9 +86,9 @@ if __name__ == '__main__':
                                                data_completeness=data_completeness, data_sparsity=data_sparsity,
                                                evaluation=True)
 
-        conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
-        # ds_kitti = dataset.KITTI360Dataset('kitti360Scripts', 'train', evaluation=True)
-        # conditioned_input = ds_kitti.__getitem__(conditioned_ind)['points_tgt'].unsqueeze(0)
+        # conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
+        ds_kitti = dataset.KITTI360Dataset('data/KITTI-360/data_3d_pointcloud', 'train', 'car', evaluation=True)
+        conditioned_input = ds_kitti.__getitem__(conditioned_ind)['points_tgt'].unsqueeze(0)
         print("object id:", conditioned_ind + 1, "sample points:", conditioned_input.shape[1])
 
         # input mapping
@@ -106,7 +107,12 @@ if __name__ == '__main__':
 
         net.eval()
         conditioned_input = conditioned_input.to(device)
-        latent_code, sigma = net.encoder(conditioned_input)
+        latent_code, logstd = net.encoder(conditioned_input)
+
+        # sampling
+        # q_z = dist.Normal(torch.zeros(z_dim, device=device).unsqueeze(0),
+        #                   torch.ones(z_dim, device=device).unsqueeze(0) * np.exp(0))
+        # latent_code = q_z.sample()
 
         # import matplotlib.pyplot as plt
         # plt.figure()

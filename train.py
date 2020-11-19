@@ -13,7 +13,7 @@ import torch
 import torch.optim as optim
 
 from utils import dataset
-from network.training import get_prior_z, build_network, train, input_encoder_param
+from network.training import get_prior_z, build_network, train, input_encoder_param, joint_train
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,17 +85,24 @@ if __name__ == '__main__':
     print('The number of parameters of model is', num_params)
 
     # create dataloader
+    # ShapeNet
     DATA_PATH = cfg['data']['path']
     fields = {
         'inputs': dataset.PointCloudField(cfg['data']['pointcloud_file'])
     }
     category = cfg['data']['classes']
-    train_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
-                                            split='train', with_normals=use_normal, points_batch=points_batch,
-                                            partial_input=partial_input, data_completeness=data_completeness,
-                                            data_sparsity=data_sparsity)
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, num_workers=0, shuffle=False, drop_last=True, pin_memory=True)
+    shapenet_dataset = dataset.ShapenetDataset(dataset_folder=DATA_PATH, fields=fields, categories=category,
+                                               split='train', with_normals=use_normal, points_batch=points_batch,
+                                               partial_input=partial_input, data_completeness=data_completeness,
+                                               data_sparsity=data_sparsity)
+    shapenet_loader = torch.utils.data.DataLoader(
+        shapenet_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True, pin_memory=True)
+
+    # KITTI
+    kitti_dataset = dataset.KITTI360Dataset(cfg['data']['kitti_pcl_path'], 'train',
+                                            cfg['data']['kitti_class'], points_batch)
+    kitti_loader = torch.utils.data.DataLoader(kitti_dataset, batch_size=batch_size, num_workers=0, shuffle=True,
+                                               drop_last=True, pin_memory=True)
 
     # create optimizer
     optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -112,8 +119,25 @@ if __name__ == '__main__':
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = lr / (2 ** (epoch // 500 - 1))
                 print(optimizer)
-        avg_loss, rec_loss, eik_loss, vae_loss = train(net, train_loader, optimizer, device, eik_weight, vae_weight,
-                                                       use_normal, use_eik, enforce_symmetry)
+        if cfg['data']['dataset'] == 'shapenet':
+            if epoch == 0:
+                print("Train on shapenet!")
+                print('kitti objects:', len(shapenet_dataset))
+            avg_loss, rec_loss, eik_loss, vae_loss = train(net, shapenet_loader, optimizer, device, eik_weight,
+                                                           vae_weight, use_normal, use_eik, enforce_symmetry)
+        elif cfg['data']['dataset'] == 'kitti':
+            if epoch == 0:
+                print("Train on kitti!")
+                print('kitti objects:', len(kitti_dataset))
+            avg_loss, rec_loss, eik_loss, vae_loss = train(net, kitti_loader, optimizer, device, eik_weight, vae_weight,
+                                                           False, use_eik, enforce_symmetry)
+        else:
+            if epoch == 0:
+                print("Joint training!")
+                print('shapenet objects:', len(shapenet_dataset), 'kitti objects:', len(kitti_dataset))
+            avg_loss, rec_loss, eik_loss, vae_loss = joint_train(net, shapenet_loader, kitti_loader, optimizer, device,
+                                                                 eik_weight, vae_weight, use_normal, use_eik,
+                                                                 enforce_symmetry, cfg['data']['kitti_weight'])
         avg_training_loss.append(avg_loss)
         rec_training_loss.append(rec_loss)
         eik_training_loss.append(eik_loss)

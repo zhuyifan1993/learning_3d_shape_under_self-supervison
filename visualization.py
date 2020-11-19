@@ -42,6 +42,10 @@ def main():
     # plot_pcds(filename=None, pcds=[data], titles=[''])
     # plot_pcds_patterns(filename=None, pcds=[data], titles='t')
 
+    # KITTI dataset
+    DATA_PATH = 'data/KITTI-360/data_3d_pointcloud/2013_05_28_drive_0000_sync/car'
+    data = np.load(os.path.join(DATA_PATH, '1_canonical.npy'))
+
     np.savetxt('shapenet/scene1.txt', data)
     pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
     print(pcd)
