@@ -123,7 +123,7 @@ if __name__ == '__main__':
         if cfg['data']['dataset'] == 'shapenet':
             if epoch == 0:
                 print("Train on shapenet!")
-                print('kitti objects:', len(shapenet_dataset), category)
+                print('shapenet objects:', len(shapenet_dataset), category)
             avg_loss, rec_loss, eik_loss, vae_loss = train(net, shapenet_loader, optimizer, device, eik_weight,
                                                            vae_weight, use_normal, use_eik, enforce_symmetry)
         elif cfg['data']['dataset'] == 'kitti':
