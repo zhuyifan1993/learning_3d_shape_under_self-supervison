@@ -247,12 +247,12 @@ def joint_train(net, data_loader1, data_loader2, optimizer, device, eik_weight, 
         if enforce_symmetry:
             h_mnfld1, h_mnfld_reflected1, h_non_mnfld1, kl = net(pts1_reflec, mnfld_pnts=pts1, non_mnfld_pnts=fake1)
             h_mnfld_symmetry1 = (h_mnfld1 + h_mnfld_reflected1) / 2
-            h_mnfld2, h_mnfld_reflected2, _, _ = net(pts2_reflec, mnfld_pnts=pts2, non_mnfld_pnts=fake2)
+            h_mnfld2, h_mnfld_reflected2, h_non_mnfld2, _ = net(pts2_reflec, mnfld_pnts=pts2, non_mnfld_pnts=fake2)
             h_mnfld_symmetry2 = (h_mnfld2 + h_mnfld_reflected2) / 2
         else:
             h_mnfld1, _, h_non_mnfld1, kl = net(mnfld_pnts=pts1, non_mnfld_pnts=fake1)
             h_mnfld_symmetry1 = h_mnfld1
-            h_mnfld2, _, _, _ = net(mnfld_pnts=pts2, non_mnfld_pnts=fake2)
+            h_mnfld2, _, h_non_mnfld2, _ = net(mnfld_pnts=pts2, non_mnfld_pnts=fake2)
             h_mnfld_symmetry2 = h_mnfld2
 
         # vae loss
@@ -269,8 +269,9 @@ def joint_train(net, data_loader1, data_loader2, optimizer, device, eik_weight, 
 
         # eikonal loss
         if use_eik:
-            fake_grad = gradient(inputs=fake1, outputs=h_non_mnfld1)
-            eikonal_term = ((fake_grad.norm(2, dim=2) - 1) ** 2).mean()
+            fake_grad1 = gradient(inputs=fake1, outputs=h_non_mnfld1)
+            fake_grad2 = gradient(inputs=fake2, outputs=h_non_mnfld2)
+            eikonal_term = ((fake_grad1.norm(2, dim=2) - 1) ** 2).mean() + ((fake_grad2.norm(2, dim=2) - 1) ** 2).mean()
         else:
             eikonal_term = torch.zeros([], device=device)
 

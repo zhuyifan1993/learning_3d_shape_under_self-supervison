@@ -45,7 +45,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/exp_last/shapenet_all_zdim_256_p1_s50'
+    save_fold = '/exp_last/shapenet_sofa_kitti_building_zdim_256_ep3200'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     # CONFIG_PATH = 'models' + save_fold + '/config.yaml'
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     #     cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     # hyper-parameters
-    checkpoint = '1000'
+    checkpoint = '0100'
     split = 'test'
     nb_grid = 128
     conditioned_ind = 0
@@ -87,7 +87,7 @@ if __name__ == '__main__':
                                                evaluation=True)
 
         # conditioned_input = test_dataset.__getitem__(conditioned_ind)['points'].unsqueeze(0)
-        ds_kitti = dataset.KITTI360Dataset('data/KITTI-360/data_3d_pointcloud', 'train', 'car', evaluation=True)
+        ds_kitti = dataset.KITTI360Dataset('data/KITTI-360/data_3d_pointcloud', 'train', 'building', evaluation=True)
         conditioned_input = ds_kitti.__getitem__(conditioned_ind)['points_tgt'].unsqueeze(0)
         print("object id:", conditioned_ind + 1, "sample points:", conditioned_input.shape[1])
 

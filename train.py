@@ -26,7 +26,8 @@ if __name__ == '__main__':
     # hyper-parameters
     num_epochs = cfg['training']['epochs']
     points_batch = cfg['training']['subsamples_each_step']
-    batch_size = cfg['training']['batch_size']
+    batch_size_shapenet = cfg['training']['batch_size_shapenet']
+    batch_size_kitti = cfg['training']['batch_size_kitti']
     lr = cfg['training']['lr']
     use_lr_schedule = cfg['training']['lr_schedule']
     retrieve_model = cfg['training']['retrieve_model']
@@ -96,12 +97,12 @@ if __name__ == '__main__':
                                                partial_input=partial_input, data_completeness=data_completeness,
                                                data_sparsity=data_sparsity)
     shapenet_loader = torch.utils.data.DataLoader(
-        shapenet_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True, pin_memory=True)
+        shapenet_dataset, batch_size=batch_size_shapenet, num_workers=0, shuffle=True, drop_last=True, pin_memory=True)
 
     # KITTI
     kitti_dataset = dataset.KITTI360Dataset(cfg['data']['kitti_pcl_path'], 'train',
                                             cfg['data']['kitti_class'], points_batch)
-    kitti_loader = torch.utils.data.DataLoader(kitti_dataset, batch_size=batch_size, num_workers=0, shuffle=True,
+    kitti_loader = torch.utils.data.DataLoader(kitti_dataset, batch_size=batch_size_kitti, num_workers=0, shuffle=True,
                                                drop_last=True, pin_memory=True)
 
     # create optimizer
@@ -122,19 +123,20 @@ if __name__ == '__main__':
         if cfg['data']['dataset'] == 'shapenet':
             if epoch == 0:
                 print("Train on shapenet!")
-                print('kitti objects:', len(shapenet_dataset))
+                print('kitti objects:', len(shapenet_dataset), category)
             avg_loss, rec_loss, eik_loss, vae_loss = train(net, shapenet_loader, optimizer, device, eik_weight,
                                                            vae_weight, use_normal, use_eik, enforce_symmetry)
         elif cfg['data']['dataset'] == 'kitti':
             if epoch == 0:
                 print("Train on kitti!")
-                print('kitti objects:', len(kitti_dataset))
+                print('kitti objects:', len(kitti_dataset), cfg['data']['kitti_class'])
             avg_loss, rec_loss, eik_loss, vae_loss = train(net, kitti_loader, optimizer, device, eik_weight, vae_weight,
                                                            False, use_eik, enforce_symmetry)
         else:
             if epoch == 0:
                 print("Joint training!")
-                print('shapenet objects:', len(shapenet_dataset), 'kitti objects:', len(kitti_dataset))
+                print('shapenet objects:', len(shapenet_dataset), category, 'kitti objects:', len(kitti_dataset),
+                      cfg['data']['kitti_class'])
             avg_loss, rec_loss, eik_loss, vae_loss = joint_train(net, shapenet_loader, kitti_loader, optimizer, device,
                                                                  eik_weight, vae_weight, use_normal, use_eik,
                                                                  enforce_symmetry, cfg['data']['kitti_weight'])

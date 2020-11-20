@@ -306,7 +306,7 @@ class KITTI360Dataset(data.Dataset):
         self.evaluation = evaluation
 
         self.root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.dataset_folder, split)
-        self.dirList = sorted(glob.glob(self.root_dir + '\*\{}\*'.format(category)), key=os.path.getmtime)
+        self.dirList = sorted(glob.glob(self.root_dir + '/*/{}/*'.format(category)), key=os.path.getmtime)
 
     def __len__(self):
         return len(self.dirList)
