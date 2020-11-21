@@ -70,7 +70,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    save_fold = '/exp_2000/shapenet_car_zdim_256_partial_vae'
+    save_fold = '/exp_last/shapenet_all_zdim_256_p1_s50'
     os.makedirs('output' + save_fold, exist_ok=True)
 
     CONFIG_PATH = 'models' + save_fold + '/config.yaml'
@@ -144,17 +144,25 @@ if __name__ == '__main__':
 
             surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
                                             mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True,
-                                            connected=True)
+                                            connected=False)
             if save_mesh:
-                surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.off'.format(split, data_completeness, data_sparsity,
-                                                                             checkpoint, ind),
-                    'off')
+                try:
+                    surface['mesh_export'].export(
+                        'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.off'.format(split, data_completeness,
+                                                                                 data_sparsity,
+                                                                                 checkpoint, ind),
+                        'off')
+                except AttributeError:
+                    print('Warning: mesh does not exist: %s' % ind)
             if save_pointcloud:
-                surface['mesh_export'].export(
-                    'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.ply'.format(split, data_completeness, data_sparsity,
-                                                                             checkpoint, ind),
-                    'ply')
+                try:
+                    surface['mesh_export'].export(
+                        'output' + save_fold + '/mesh_{}_{}_{}_{}_{}.ply'.format(split, data_completeness,
+                                                                                 data_sparsity,
+                                                                                 checkpoint, ind),
+                        'ply')
+                except AttributeError:
+                    print('Warning: mesh does not exist: %s' % ind)
 
     # Interpolate in Latent Space
     if latentsp_interp:

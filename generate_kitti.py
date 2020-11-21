@@ -70,8 +70,9 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    model_fold = '/exp_last_kl/shapenet_car_zdim_64_p1_s100_kle3'
-    save_fold = '/kitti_result/shapenet_car_zdim_64_p1_s100_kle3'
+    exp_name = '/shapenet_all_kitti_building_zdim_256_kw1'
+    model_fold = '/exp_last' + exp_name
+    save_fold = '/kitti_result' + exp_name
     os.makedirs('output' + save_fold, exist_ok=True)
 
     CONFIG_PATH = 'models' + model_fold + '/config.yaml'
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     # hyper-parameters
     checkpoint = 'final'
     split = 'test'
-    category = 'car'
+    category = 'building'
     nb_grid = cfg['generate']['nb_grid']
     save_mesh = True
     save_pointcloud = False
@@ -137,16 +138,22 @@ if __name__ == '__main__':
 
             surface = plt.get_surface_trace(points=points, decoder=net.decoder, latent=latent_code, resolution=nb_grid,
                                             mc_value=0, is_uniform=is_uniform, verbose=False, save_ply=True,
-                                            connected=True)
+                                            connected=False)
 
             if save_mesh:
-                surface['mesh_export'].export(
-                    'output' + save_fold + '/kittimesh_{}_{}_{}_{}.off'.format(split, category, checkpoint, ind),
-                    'off')
+                try:
+                    surface['mesh_export'].export(
+                        'output' + save_fold + '/kittimesh_{}_{}_{}_{}.off'.format(split, category, checkpoint, ind),
+                        'off')
+                except AttributeError:
+                    print('Warning: mesh does not exist: %s' % ind)
             if save_pointcloud:
-                surface['mesh_export'].export(
-                    'output' + save_fold + '/kittimesh_{}_{}_{}_{}.ply'.format(split, category, checkpoint, ind),
-                    'ply')
+                try:
+                    surface['mesh_export'].export(
+                        'output' + save_fold + '/kittimesh_{}_{}_{}_{}.ply'.format(split, category, checkpoint, ind),
+                        'ply')
+                except AttributeError:
+                    print('Warning: mesh does not exist: %s' % ind)
 
     # Interpolate in Latent Space
     if latentsp_interp:
