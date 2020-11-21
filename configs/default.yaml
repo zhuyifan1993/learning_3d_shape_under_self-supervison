@@ -1,0 +1,52 @@
+data:
+  path: data/ShapeNet
+  classes: [ '02958343' ]
+  pointcloud_file: pointcloud.npz
+  partial_input: False
+  data_completeness: 0.5
+  data_sparsity: 100
+  kitti_pcl_path: data/KITTI-360/data_3d_pointcloud
+  kitti_class: car
+  kitti_weight: 1
+  dataset: j
+model:
+  use_eik: True
+  variational: True
+  use_kl: kl
+  eik_weight: 0.1
+  vae_weight: 1.0e-3
+  z_dim: 64
+  beta: 100
+  skip_connection: True
+training:
+  epochs: 2000
+  subsamples_each_step: 200
+  batch_size_shapenet: 2
+  batch_size_kitti: 2
+  lr: 5.0e-4
+  lr_schedule: True
+  retrieve_model: True
+  retrieve_path: /exp_last_kl/shapenet_car_zdim_64_p1_s100_kle3
+  checkpoint: final
+  geo_initial: False
+  use_normal: True
+  enforce_symmetry: False
+  input_mapping: False
+  embedding_method: gauss
+generate:
+  eval_fullsque: True
+  checkpoint: final
+  split: test
+  nb_grid: 128
+  conditioned_ind: 0
+  save_mesh: True
+  save_pointcloud: True
+  partial_input: True
+  data_completeness: 0.7
+  data_sparsity: 100
+interpolate:
+  latentsp_interp: False
+  conditioned_ind1: 0
+  conditioned_ind2: 769
+dir:
+  save_fold: /debug/shapenet_car_zdim_0
