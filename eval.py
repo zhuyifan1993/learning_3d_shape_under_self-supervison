@@ -11,7 +11,7 @@ from utils import dataset
 from im2mesh.eval import MeshEvaluator
 from im2mesh.utils.io import load_pointcloud
 
-save_fold = os.path.join('exp_symm', 'shapenet_car_zdim_256_partial_05_100')
+save_fold = os.path.join('exp_last', 'shapenet_all_zdim_256_p1_s50')
 output_dir = os.path.join('output', save_fold)
 CONFIG_PATH = os.path.join('models', save_fold, 'config.yaml')
 with open(CONFIG_PATH, 'r') as f:

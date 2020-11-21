@@ -7,6 +7,7 @@
 import glob
 import logging
 import os
+import h5py
 
 import torch
 import yaml
@@ -238,7 +239,7 @@ class ShapenetDataset(data.Dataset):
                 shapes_c = f.read().split('\n')
 
             # limit data length
-            shapes_c = shapes_c[:3]
+            # shapes_c = shapes_c[:3]
 
             self.shapes += [
                 {'category': c, 'shape': s}
@@ -321,5 +322,51 @@ class KITTI360Dataset(data.Dataset):
         else:
             random_idx = torch.randperm(pcd.shape[0])[:self.points_batch]
             data['points'] = torch.index_select(pcd, 0, random_idx)
+
+        return data
+
+
+# DataLoader for Stanford 3D Object Point Cloud Completion Benchmark
+def load_h5(path, verbose=False):
+    if verbose:
+        print("Loading %s \n" % path)
+    f = h5py.File(path, 'r')
+    cloud_data = np.array(f['data'])
+    f.close()
+
+    return cloud_data.astype(np.float32)
+
+
+class ShapenetDataProcess(data.Dataset):
+
+    def __init__(self, data_folder, split='val'):
+        """Shapenet dataloader.
+
+        Args:
+            split: str in ('train', 'val', 'test'). Loads corresponding dataset.
+        """
+        self.split = split
+        DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', data_folder)
+
+        self.partial_data_paths = sorted([os.path.join(DATA_PATH, split, 'partial', k.rstrip() + '.h5') for k in
+                                          open(DATA_PATH + '/%s.list' % split).readlines()])
+
+        self.gt_data_paths = sorted([os.path.join(DATA_PATH, split, 'gt', k.rstrip() + '.h5') for k in
+                                     open(DATA_PATH + '/%s.list' % split).readlines()])
+
+    def __len__(self):
+        return len(self.gt_data_paths)
+
+    def __getitem__(self, idx):
+        data = {}
+        partial_shape_path = self.partial_data_paths[idx]
+        gt_shape_path = self.gt_data_paths[idx]
+        partial_pcd = load_h5(partial_shape_path)
+        partial_pcd = torch.from_numpy(partial_pcd)
+        gt_pcd = load_h5(gt_shape_path)
+        gt_pcd = torch.from_numpy(gt_pcd)
+
+        data['points_tgt'] = gt_pcd
+        data['points'] = partial_pcd
 
         return data
