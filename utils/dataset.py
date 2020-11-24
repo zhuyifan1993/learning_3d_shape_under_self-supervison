@@ -276,6 +276,7 @@ class ShapenetDataset(data.Dataset):
                 if self.eval:
                     data['points_tgt'] = field_data['points']
                     data['points'] = pts
+                    data['category'] = category
                 else:
                     random_idx = torch.randperm(pts.shape[0])[:self.points_batch]
                     data['points'] = torch.index_select(pts, 0, random_idx)

@@ -1,5 +1,6 @@
 __pycache__/
 sdf/
+figures/
 output/
 models/
 shapenet/

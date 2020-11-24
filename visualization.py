@@ -145,7 +145,7 @@ def plot_pcds_patterns(filename, pcds, titles, suptitle='', sizes=None, cmap='Re
 
 
 if __name__ == "__main__":
-    main()
+    # main()
     # sdf()
     # visua_kitti()
 
@@ -180,6 +180,6 @@ if __name__ == "__main__":
     ax = fig.add_subplot(133)
     ax.plot(a, c100)
     ax.set_title('Softplus(beta=100)')
-    plt.suptitle('Activation Function Behaviour')
+    # plt.suptitle('Activation Function Behaviour')
 
     plt.show()
