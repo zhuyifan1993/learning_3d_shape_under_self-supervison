@@ -352,22 +352,24 @@ class ShapenetDataProcess(data.Dataset):
         self.partial_data_paths = sorted([os.path.join(DATA_PATH, split, 'partial', k.rstrip() + '.h5') for k in
                                           open(DATA_PATH + '/%s.list' % split).readlines()])
 
-        self.gt_data_paths = sorted([os.path.join(DATA_PATH, split, 'gt', k.rstrip() + '.h5') for k in
-                                     open(DATA_PATH + '/%s.list' % split).readlines()])
+        if split != 'test':
+            self.gt_data_paths = sorted([os.path.join(DATA_PATH, split, 'gt', k.rstrip() + '.h5') for k in
+                                         open(DATA_PATH + '/%s.list' % split).readlines()])
 
     def __len__(self):
-        return len(self.gt_data_paths)
+        return len(self.partial_data_paths)
 
     def __getitem__(self, idx):
         data = {}
         partial_shape_path = self.partial_data_paths[idx]
-        gt_shape_path = self.gt_data_paths[idx]
         partial_pcd = load_h5(partial_shape_path)
         partial_pcd = torch.from_numpy(partial_pcd)
-        gt_pcd = load_h5(gt_shape_path)
-        gt_pcd = torch.from_numpy(gt_pcd)
-
-        data['points_tgt'] = gt_pcd
         data['points'] = partial_pcd
+
+        if self.split != 'test':
+            gt_shape_path = self.gt_data_paths[idx]
+            gt_pcd = load_h5(gt_shape_path)
+            gt_pcd = torch.from_numpy(gt_pcd)
+            data['points_tgt'] = gt_pcd
 
         return data

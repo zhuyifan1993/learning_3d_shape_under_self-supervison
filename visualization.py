@@ -29,9 +29,9 @@ def main():
     split_file = os.path.join(DATA_PATH, "02958343", 'test.lst')
     with open(split_file, 'r') as f:
         model = f.read().split('\n')
-    idx = 3
-    data_completeness = 0.7
-    data_sparsity = 100
+    idx = 0
+    data_completeness = 1
+    data_sparsity = 1
     data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
     data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
 
@@ -43,11 +43,12 @@ def main():
     # plot_pcds_patterns(filename=None, pcds=[data], titles='t')
 
     # KITTI dataset
-    DATA_PATH = 'data/KITTI-360/data_3d_pointcloud/2013_05_28_drive_0000_sync/car'
-    data = np.load(os.path.join(DATA_PATH, '1_canonical.npy'))
+    # DATA_PATH = 'data/KITTI-360/data_3d_pointcloud/2013_05_28_drive_0000_sync/car'
+    # data = np.load(os.path.join(DATA_PATH, '1_canonical.npy'))
 
     np.savetxt('shapenet/scene1.txt', data)
     pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
+    o3d.io.write_point_cloud('carinput_{}_{}.ply'.format(data_completeness,data_sparsity), pcd)
     print(pcd)
     o3d.visualization.draw_geometries([pcd])
 
@@ -145,7 +146,7 @@ def plot_pcds_patterns(filename, pcds, titles, suptitle='', sizes=None, cmap='Re
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # sdf()
     # visua_kitti()
 
