@@ -31,13 +31,13 @@ def main():
         model = f.read().split('\n')
     idx = 0
     data_completeness = 1
-    data_sparsity = 1
-    data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
-    data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
+    data_sparsity = 100
+    data = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['normals'][::data_sparsity]
+    # data = create_partial_data(data, idx, data_completeness=data_completeness)[::data_sparsity]
 
-    idx = 1
-    data1 = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
-    data1 = create_partial_data(data1, idx, data_completeness=data_completeness)[::data_sparsity]
+    # idx = 1
+    # data1 = np.load(os.path.join(DATA_PATH, "02958343", model[idx], 'pointcloud.npz'))['points']
+    # data1 = create_partial_data(data1, idx, data_completeness=data_completeness)[::data_sparsity]
 
     # plot_pcds(filename=None, pcds=[data], titles=[''])
     # plot_pcds_patterns(filename=None, pcds=[data], titles='t')
@@ -48,7 +48,7 @@ def main():
 
     np.savetxt('shapenet/scene1.txt', data)
     pcd = o3d.io.read_point_cloud('shapenet/scene1.txt', format='xyz')
-    o3d.io.write_point_cloud('carinput_{}_{}.ply'.format(data_completeness,data_sparsity), pcd)
+    o3d.io.write_point_cloud('carnormal_{}_{}.ply'.format(data_completeness, data_sparsity), pcd)
     print(pcd)
     o3d.visualization.draw_geometries([pcd])
 
@@ -146,7 +146,7 @@ def plot_pcds_patterns(filename, pcds, titles, suptitle='', sizes=None, cmap='Re
 
 
 if __name__ == "__main__":
-    main()
+    # main()
     # sdf()
     # visua_kitti()
 
@@ -168,19 +168,32 @@ if __name__ == "__main__":
     c1 = np.asarray(act_softplus1(torch.from_numpy(a)))
     c100 = np.asarray(act_softplus100(torch.from_numpy(a)))
 
-    fig = plt.figure(figsize=(13, 5))
+    # fig = plt.figure(figsize=(13, 5))
+    #
+    # ax = fig.add_subplot(131)
+    # ax.plot(a, b)
+    # ax.set_ylabel('output')
+    # ax.set_title('ReLU')
+    # ax = fig.add_subplot(132)
+    # ax.plot(a, c1)
+    # ax.set_xlabel('input')
+    # ax.set_title('Softplus(beta=1)')
+    # ax = fig.add_subplot(133)
+    # ax.plot(a, c100)
+    # ax.set_title('Softplus(beta=100)')
+    # # plt.suptitle('Activation Function Behaviour')
+    #
+    # plt.show()
 
-    ax = fig.add_subplot(131)
-    ax.plot(a, b)
-    ax.set_ylabel('output')
-    ax.set_title('ReLU')
-    ax = fig.add_subplot(132)
-    ax.plot(a, c1)
-    ax.set_xlabel('input')
-    ax.set_title('Softplus(beta=1)')
-    ax = fig.add_subplot(133)
-    ax.plot(a, c100)
-    ax.set_title('Softplus(beta=100)')
-    # plt.suptitle('Activation Function Behaviour')
+    fig = plt.figure(figsize=(15, 7))
+    ax = fig.add_subplot()
+    rec_loss = [0.536, 0.444, 0.500, 0.422, 0.425]
+    label = ['R_Geo + R_Latent(KL)', 'R_Geo + R_Latent(L1)', 'R_Geo + R_Latent(L1+L2)', 'R_Geo', 'No Regularizer']
+    ax.barh(np.arange(len(label)), rec_loss, align='center',
+            height=0.5, tick_label=label)
+    ax.xaxis.grid(True, linestyle='--', which='major',
+                  color='grey', alpha=.25)
 
+    ax.set_xlabel('Reconstruction Loss')
+    plt.subplots_adjust(left=0.15, right=0.95, bottom=0.05, top=0.9, wspace=0.1, hspace=0.1)
     plt.show()
