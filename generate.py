@@ -93,6 +93,7 @@ if __name__ == '__main__':
     partial_input = cfg['generate']['partial_input']
     data_completeness = cfg['generate']['data_completeness']
     data_sparsity = cfg['generate']['data_sparsity']
+    add_noise = True
 
     conditioned_ind1 = 0
     conditioned_ind2 = 769
@@ -127,6 +128,8 @@ if __name__ == '__main__':
     if eval_fullsque:
         for ind, data in enumerate(test_loader):
             conditioned_input = data['points']
+            if add_noise:
+                conditioned_input = torch.randn_like(conditioned_input) * 0.05 + conditioned_input
             print("object id:", ind + 1, "sample points:", conditioned_input.shape[1])
 
             net.eval()
